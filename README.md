@@ -22,6 +22,15 @@ Pour qu'on ne puisse jamais bloquer complètement son téléphone :
 - les horaires stricts, même cumulés, doivent laisser au moins 2 heures libres d'affilée toutes les 24 h
   (les trous plus courts comptent comme verrouillés) ; une session stricte manuelle dure au plus 8 h.
 
+Et pour qu'on ne puisse pas contourner le mode strict :
+- changer l'heure ou le fuseau du téléphone pendant un blocage strict est neutralisé (l'appli suit le temps
+  écoulé depuis le démarrage, impossible à modifier) ; le passage heure d'été / heure d'hiver n'est jamais
+  pris pour une manipulation, et un horaire de nuit se termine à la bonne heure locale ce jour-là.
+
+## Raccourcis
+- **Notification permanente** pendant une session ou un horaire, avec compte à rebours jusqu'à la prochaine pause.
+- **Tuile des réglages rapides** « LibreBlock » : démarre une session avec les derniers réglages, ou l'arrête.
+
 ## Architecture
 | Fichier | Rôle |
 |---|---|

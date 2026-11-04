@@ -50,6 +50,16 @@ data class Schedule(
         return if (Duration.between(start, t).toMinutes() < durationMin) start else null
     }
 
+    /**
+     * Début et fin (epoch ms) de l'occurrence en cours, ou null. Calculés en heure locale : la nuit du
+     * changement d'heure, un horaire 23:00 – 08:00 se termine bien à 08:00 (8 ou 10 heures réelles).
+     */
+    fun window(now: Long, zone: ZoneId): Pair<Long, Long>? {
+        val since = activeSince(LocalDateTime.ofInstant(Instant.ofEpochMilli(now), zone)) ?: return null
+        val end = since.plusMinutes(durationMin.toLong())
+        return since.atZone(zone).toInstant().toEpochMilli() to end.atZone(zone).toInstant().toEpochMilli()
+    }
+
     private companion object {
         const val MINUTES_PER_DAY = 24 * 60
     }
@@ -149,7 +159,11 @@ internal fun activeState(
  * immédiatement les changements faits dans l'interface.
  */
 class Store(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("libreblock", Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences("libreblock", Context.MODE_PRIVATE)
+
+    /** Heure de référence de l'appli, protégée contre les changements d'heure pendant le mode strict. */
+    fun now() = TrustedClock.now(appContext)
 
     /** Liste principale : celle des sessions manuelles, et le point de départ des nouveaux horaires. */
     var blockedApps: Set<String>
@@ -195,6 +209,10 @@ class Store(context: Context) {
         get() = prefs.getLong(KEY_SESSION_END, 0L)
         set(value) = prefs.edit().putLong(KEY_SESSION_END, value).apply()
 
+    var onboardingDone: Boolean
+        get() = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
+        set(value) = prefs.edit().putBoolean(KEY_ONBOARDING_DONE, value).apply()
+
     init {
         // Anciennes versions : une seule liste d'applis et un mode strict commun à tous les horaires.
         if (!prefs.contains(KEY_SCHEDULES_V2)) {
@@ -203,19 +221,31 @@ class Store(context: Context) {
             schedules = schedules.map { it.copy(strict = legacyStrict, apps = apps) }
             prefs.edit().putBoolean(KEY_SCHEDULES_V2, true).remove(KEY_STRICT_SCHEDULES).apply()
         }
+        // Ceux qui utilisaient déjà l'appli avant l'écran de premier lancement n'en ont pas besoin.
+        if (!prefs.contains(KEY_ONBOARDING_DONE) && blockedApps.isNotEmpty()) onboardingDone = true
     }
 
     /** workMin = 0 : blocage continu ; sinon session de travail avec pauses. */
     fun startSession(minutes: Int, strict: Boolean, workMin: Int, breakMin: Int) {
-        val now = System.currentTimeMillis()
+        val now = now()
         prefs.edit()
             .putLong(KEY_SESSION_START, now)
             .putLong(KEY_SESSION_END, now + minutes * 60_000L)
             .putBoolean(KEY_SESSION_STRICT, strict)
             .putInt(KEY_SESSION_WORK, workMin)
             .putInt(KEY_SESSION_BREAK, breakMin)
+            // Réglages repris par la tuile des réglages rapides.
+            .putInt(KEY_LAST_MINUTES, minutes)
             .apply()
     }
+
+    /** Relance une session avec les derniers réglages (25 min de travail / 5 min de pause par défaut). */
+    fun startLastSession() = startSession(
+        minutes = prefs.getInt(KEY_LAST_MINUTES, 25),
+        strict = prefs.getBoolean(KEY_SESSION_STRICT, false),
+        workMin = prefs.getInt(KEY_SESSION_WORK, 0),
+        breakMin = prefs.getInt(KEY_SESSION_BREAK, 5),
+    )
 
     fun active(now: Long): List<Active> {
         val list = mutableListOf<Active>()
@@ -228,15 +258,15 @@ class Store(context: Context) {
                 prefs.getBoolean(KEY_SESSION_STRICT, false), mainList, scheduleId = null, usesMainList = true,
             )
         }
-        val zone = ZoneId.systemDefault()
-        val t = LocalDateTime.ofInstant(Instant.ofEpochMilli(now), zone)
+        val zone = TrustedClock.zone(appContext)
         for (s in schedules) {
-            val start = s.activeSince(t)?.atZone(zone)?.toInstant()?.toEpochMilli() ?: continue
+            val (start, scheduleEnd) = s.window(now, zone) ?: continue
             list += activeState(
-                start, start + s.durationMin * 60_000L, s.workMin, s.breakMin, now, s.strict,
+                start, scheduleEnd, s.workMin, s.breakMin, now, s.strict,
                 if (s.useMainList) mainList else s.apps, s.id, s.useMainList,
             )
         }
+        TrustedClock.setArmed(appContext, list.any { it.strict })
         return list
     }
 
@@ -261,6 +291,8 @@ class Store(context: Context) {
         const val KEY_SESSION_WORK = "session_work"
         const val KEY_SESSION_BREAK = "session_break"
         const val KEY_STRICT_SCHEDULES = "strict_schedules"
+        const val KEY_ONBOARDING_DONE = "onboarding_done"
+        const val KEY_LAST_MINUTES = "last_minutes"
     }
 }
 
@@ -273,7 +305,7 @@ private fun clock() = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withL
 
 fun formatMinutes(m: Int): String = clock().format(LocalTime.of(m / 60, m % 60))
 
-fun formatClock(epochMs: Long): String = clock().format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()))
+fun formatClock(epochMs: Long): String = clock().format(Instant.ofEpochMilli(epochMs).atZone(TrustedClock.zone))
 
 fun formatDuration(minutes: Int) = if (minutes < 60) "$minutes min" else "%dh%02d".format(minutes / 60, minutes % 60)
 

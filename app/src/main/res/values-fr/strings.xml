@@ -110,7 +110,40 @@
     <string name="reason_schedule_until">Horaire bloqué jusqu\'à %s</string>
     <string name="back_home">Retour à l\'accueil</string>
 
+    <!-- Premier lancement -->
+    <string name="onboarding_back">Retour</string>
+    <string name="onboarding_next">Suivant</string>
+    <string name="onboarding_finish">C\'est parti</string>
+    <string name="onboarding_welcome_title">Bienvenue dans LibreBlock</string>
+    <string name="onboarding_welcome_text">Bloque les applis qui te distraient, quand tu le décides.\nGratuit, sans pub, sans compte, sans Internet.</string>
+    <string name="onboarding_how_title">Comment ça marche</string>
+    <string name="onboarding_sessions_title">Sessions</string>
+    <string name="onboarding_sessions_text">Bloque tes applis tout de suite, en continu ou en alternant travail et pauses (25 / 5 min).</string>
+    <string name="onboarding_schedules_title">Horaires</string>
+    <string name="onboarding_schedules_text">Programme des blocages récurrents, par exemple la nuit ou pendant le travail.</string>
+    <string name="onboarding_strict_title">Mode strict</string>
+    <string name="onboarding_strict_text">Impossible d\'arrêter avant la fin. Des garde-fous t\'empêchent de bloquer complètement ton téléphone.</string>
+    <string name="onboarding_enable_title">Activer le blocage</string>
+    <string name="onboarding_accept_enable">J\'accepte et j\'active</string>
+    <string name="onboarding_enabled">✓ Le blocage est activé</string>
+    <string name="onboarding_notifications_text">Les notifications affichent le blocage en cours et te préviennent du début et de la fin des pauses.</string>
+    <string name="onboarding_notifications_button">Autoriser les notifications</string>
+    <string name="onboarding_notifications_on">✓ Notifications autorisées</string>
+    <string name="onboarding_apps_title">Choisis tes applis</string>
+    <string name="onboarding_apps_text">Coche les applis à bloquer. Tu pourras modifier cette liste à tout moment dans l\'onglet Applis.</string>
+
+    <!-- Tuile des réglages rapides -->
+    <string name="tile_start">Appuyer pour démarrer</string>
+    <string name="tile_until">Jusqu\'à %s</string>
+    <string name="tile_strict_until">Strict jusqu\'à %s</string>
+
     <!-- Service -->
+    <string name="channel_status">Blocage en cours</string>
+    <string name="status_schedule_strict">Horaire strict</string>
+    <string name="status_schedule_flexible">Horaire souple</string>
+    <string name="status_break_until">☕ Pause jusqu\'à %s</string>
+    <string name="status_work_until">Travail — pause à %s</string>
+    <string name="status_blocked_until">Applis bloquées jusqu\'à %s</string>
     <string name="strict_toast">Mode strict actif</string>
     <string name="channel_breaks">Pauses des sessions de travail</string>
     <string name="notif_break">Pause ! Reprise à %s</string>

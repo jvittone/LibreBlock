@@ -109,7 +109,40 @@
     <string name="reason_schedule_until">Blocked by a schedule until %s</string>
     <string name="back_home">Back to home screen</string>
 
+    <!-- First launch -->
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_finish">Get started</string>
+    <string name="onboarding_welcome_title">Welcome to LibreBlock</string>
+    <string name="onboarding_welcome_text">Block the apps that distract you, when you decide.\nFree, no ads, no account, no Internet.</string>
+    <string name="onboarding_how_title">How it works</string>
+    <string name="onboarding_sessions_title">Sessions</string>
+    <string name="onboarding_sessions_text">Block your apps right away, continuously or alternating work and breaks (25 / 5 min).</string>
+    <string name="onboarding_schedules_title">Schedules</string>
+    <string name="onboarding_schedules_text">Set up recurring blocks, for example at night or during work hours.</string>
+    <string name="onboarding_strict_title">Strict mode</string>
+    <string name="onboarding_strict_text">No way to stop before the end. Safeguards make sure you can never lock yourself out of your phone.</string>
+    <string name="onboarding_enable_title">Enable blocking</string>
+    <string name="onboarding_accept_enable">I agree and enable</string>
+    <string name="onboarding_enabled">✓ Blocking is enabled</string>
+    <string name="onboarding_notifications_text">Notifications show the current block and tell you when breaks start and end.</string>
+    <string name="onboarding_notifications_button">Allow notifications</string>
+    <string name="onboarding_notifications_on">✓ Notifications allowed</string>
+    <string name="onboarding_apps_title">Choose your apps</string>
+    <string name="onboarding_apps_text">Tick the apps to block. You can change this list at any time in the Apps tab.</string>
+
+    <!-- Quick Settings tile -->
+    <string name="tile_start">Tap to start</string>
+    <string name="tile_until">Until %s</string>
+    <string name="tile_strict_until">Strict until %s</string>
+
     <!-- Service -->
+    <string name="channel_status">Current block</string>
+    <string name="status_schedule_strict">Strict schedule</string>
+    <string name="status_schedule_flexible">Flexible schedule</string>
+    <string name="status_break_until">☕ Break until %s</string>
+    <string name="status_work_until">Work — break at %s</string>
+    <string name="status_blocked_until">Apps blocked until %s</string>
     <string name="strict_toast">Strict mode is on</string>
     <string name="channel_breaks">Work session breaks</string>
     <string name="notif_break">Break! Back to work at %s</string>

@@ -57,7 +57,8 @@ class BlockActivity : ComponentActivity() {
     }
 
     private fun reason(pkg: String): String {
-        val a = Store(this).active(System.currentTimeMillis())
+        val store = Store(this)
+        val a = store.active(store.now())
             .filter { it.blocking && pkg in it.apps }
             .maxByOrNull { it.phaseEnd }
         return when {

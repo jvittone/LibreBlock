@@ -35,6 +35,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // gradlew assembleDebug -Ppreview : copie séparée, pour tester le premier lancement sans
+            // toucher aux réglages de l'appli installée.
+            if (project.hasProperty("preview")) applicationIdSuffix = ".preview"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

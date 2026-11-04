@@ -69,14 +69,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Pour prévenir des débuts et fins de pause.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        val store = Store(this)
+        // Pour prévenir des pauses ; au premier lancement, c'est l'écran d'accueil qui le demande.
+        if (store.onboardingDone &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        val store = Store(this)
-        setContent { LibreBlockTheme { App(store) } }
+        setContent {
+            LibreBlockTheme {
+                var onboarding by remember { mutableStateOf(!store.onboardingDone) }
+                if (onboarding) OnboardingScreen(store) { onboarding = false } else App(store)
+            }
+        }
     }
 }
 
@@ -92,9 +98,9 @@ private fun App(store: Store) {
     // Incrémenté à chaque modification du Store pour relire les valeurs.
     var rev by remember { mutableIntStateOf(0) }
     val onChange: () -> Unit = { rev++ }
-    val now by produceState(System.currentTimeMillis()) {
+    val now by produceState(store.now()) {
         while (true) {
-            value = System.currentTimeMillis()
+            value = store.now()
             delay(1000)
         }
     }
