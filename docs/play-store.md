@@ -82,8 +82,9 @@ puis éventuellement English (United Kingdom) avec les mêmes textes.
 
 ## Visuels
 - Icône 512 × 512 : `docs/store/icon-512.png`
-- Bannière 1024 × 500 : `docs/store/feature-1024x500.png`
-- Captures d'écran téléphone (2 à 8) : `docs/store/screenshot-*.png`
+- Bannière 1024 × 500 : `docs/store/feature-1024x500.png` (français), `docs/store/feature-1024x500-en.png` (anglais)
+- Captures d'écran téléphone : `docs/store/fr/*.png` pour la fiche française, `docs/store/en/*.png` pour la fiche anglaise
+- Visuels régénérables avec `tools/store-graphics.ps1`
 
 ## Déclaration « Utilisation de l'API AccessibilityService »
 Dans *Contenu de l'application → Accessibilité* :

@@ -7,16 +7,27 @@
     <string name="tab_home">Accueil</string>
     <string name="tab_apps">Applis</string>
     <string name="tab_schedules">Horaires</string>
+    <string name="tab_stats">Stats</string>
+
+    <!-- Listes d'applis -->
+    <plurals name="apps_count">
+        <item quantity="one">%d appli</item>
+        <item quantity="many">%d applis</item>
+        <item quantity="other">%d applis</item>
+    </plurals>
+    <plurals name="all_except_count">
+        <item quantity="one">tout sauf %d appli</item>
+        <item quantity="many">tout sauf %d applis</item>
+        <item quantity="other">tout sauf %d applis</item>
+    </plurals>
+    <string name="main_list_summary">Liste principale : %s</string>
+    <string name="custom_list_summary">Liste perso : %s</string>
+    <string name="summary_editable">%s, modifiable dans l\'onglet Applis</string>
 
     <!-- Accueil -->
     <string name="status_blocking">Blocage actif</string>
     <string name="status_break">Pause</string>
     <string name="status_idle">Aucun blocage en cours</string>
-    <plurals name="main_list_count">
-        <item quantity="one">%d appli dans la liste principale</item>
-        <item quantity="many">%d applis dans la liste principale</item>
-        <item quantity="other">%d applis dans la liste principale</item>
-    </plurals>
     <string name="schedule_running_strict">Horaire strict en cours jusqu\'à %s</string>
     <string name="schedule_running_flexible">Horaire souple en cours jusqu\'à %s</string>
     <string name="strict_locked_notice">🔒 Mode strict : impossible de désactiver ou désinstaller LibreBlock</string>
@@ -62,14 +73,16 @@
     <string name="apps_intro">Liste principale : bloquée pendant les sessions manuelles et les horaires qui l\'utilisent. Un horaire peut aussi avoir sa liste personnalisée.</string>
     <string name="search_apps">Rechercher une appli</string>
     <string name="picker_locked">🔒 Mode strict : tu peux ajouter des applis, pas en retirer.</string>
-    <string name="add_main_list">Ajouter la liste principale</string>
+    <string name="picker_locked_allow">🔒 Mode strict : tu peux retirer des applis autorisées, pas en ajouter.</string>
+    <string name="mode_block_selected">Bloquer ces applis</string>
+    <string name="mode_allow_only">Tout bloquer sauf</string>
+    <string name="allow_only_hint">Les applis cochées restent disponibles, toutes les autres sont bloquées. Le clavier, les appels et les écrans système ne sont jamais bloqués.</string>
+    <string name="copy_main_list">Copier la liste principale</string>
     <string name="essentials_note">L\'écran d\'accueil, l\'appli Téléphone et LibreBlock ne peuvent jamais être bloqués.</string>
     <string name="schedule_apps_title">Applis de l\'horaire</string>
 
     <!-- Horaires -->
     <string name="schedules_empty">Aucun horaire. Appuie sur + pour bloquer des applis à heures fixes.</string>
-    <string name="list_main_count">Liste principale (%d)</string>
-    <string name="list_custom_count">Liste perso (%d)</string>
     <string name="strict_short">strict</string>
     <string name="flexible_short">souple</string>
     <string name="cycles_summary">travail %1$d min / pause %2$d min</string>
@@ -77,7 +90,7 @@
     <string name="delete">Supprimer</string>
     <string name="add_schedule">Ajouter un horaire</string>
     <string name="schedule_dialog_title">Horaire</string>
-    <string name="schedule_locked_notice">🔒 Horaire strict en cours : tu peux seulement ajouter des applis.</string>
+    <string name="schedule_locked_notice">🔒 Horaire strict en cours : tu peux seulement rendre sa liste plus stricte.</string>
     <string name="start_time">Début : %s</string>
     <string name="end_time">Fin : %s</string>
     <string name="all_day">Toute la journée</string>
@@ -85,12 +98,7 @@
     <string name="blocked_apps">Applis bloquées</string>
     <string name="main_list">Liste principale</string>
     <string name="custom_list">Personnalisée</string>
-    <plurals name="main_list_hint">
-        <item quantity="one">%d appli, modifiable dans l\'onglet Applis</item>
-        <item quantity="many">%d applis, modifiables dans l\'onglet Applis</item>
-        <item quantity="other">%d applis, modifiables dans l\'onglet Applis</item>
-    </plurals>
-    <string name="choose_apps">Choisir les applis (%d)</string>
+    <string name="choose_apps">Choisir les applis (%s)</string>
     <string name="strict_schedule_switch">Strict (impossible de modifier ou contourner pendant l\'horaire)</string>
     <string name="cycles_switch">Session de travail (avec pauses)</string>
     <string name="error_strict_too_long">Les horaires stricts doivent laisser au moins 2 heures d\'affilée libres chaque jour, pour que tu ne puisses jamais bloquer complètement ton téléphone.</string>
@@ -109,6 +117,25 @@
     <string name="reason_focus_until">Session de concentration jusqu\'à %s</string>
     <string name="reason_schedule_until">Horaire bloqué jusqu\'à %s</string>
     <string name="back_home">Retour à l\'accueil</string>
+
+    <!-- Statistiques -->
+    <string name="stats_title">Statistiques</string>
+    <string name="stats_empty">Pas encore de statistiques. Lance une session pour voir tes progrès ici.</string>
+    <string name="stats_today">Aujourd\'hui</string>
+    <string name="stats_focus">de concentration</string>
+    <string name="stats_blocked">ouvertures bloquées</string>
+    <plurals name="stats_streak">
+        <item quantity="one">🔥 %d jour d\'affilée</item>
+        <item quantity="many">🔥 %d jours d\'affilée</item>
+        <item quantity="other">🔥 %d jours d\'affilée</item>
+    </plurals>
+    <string name="stats_week">7 derniers jours</string>
+    <string name="stats_top_apps">Applis les plus bloquées (7 jours)</string>
+    <plurals name="times_count">
+        <item quantity="one">%d fois</item>
+        <item quantity="many">%d fois</item>
+        <item quantity="other">%d fois</item>
+    </plurals>
 
     <!-- Premier lancement -->
     <string name="onboarding_back">Retour</string>

@@ -57,9 +57,8 @@ class BlockActivity : ComponentActivity() {
     }
 
     private fun reason(pkg: String): String {
-        val store = Store(this)
-        val a = store.active(store.now())
-            .filter { it.blocking && pkg in it.apps }
+        val a = SettingsRepository.get(this).evaluate()
+            .filter { it.blocking && it.list.blocks(pkg) }
             .maxByOrNull { it.phaseEnd }
         return when {
             a == null -> getString(R.string.reason_ended)

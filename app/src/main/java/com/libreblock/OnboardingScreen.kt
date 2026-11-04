@@ -52,7 +52,12 @@ private const val STEPS = 4
 
 /** Premier lancement : présentation, activation du service et choix des premières applis. */
 @Composable
-fun OnboardingScreen(store: Store, onDone: () -> Unit) {
+fun OnboardingScreen(
+    mainList: AppList,
+    apps: List<AppEntry>?,
+    onListChange: (AppList) -> Unit,
+    onDone: () -> Unit,
+) {
     var step by rememberSaveable { mutableIntStateOf(0) }
     Surface(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(24.dp)) {
@@ -61,7 +66,7 @@ fun OnboardingScreen(store: Store, onDone: () -> Unit) {
                     0 -> WelcomeStep()
                     1 -> HowItWorksStep()
                     2 -> EnableStep()
-                    else -> AppsStep(store)
+                    else -> AppsStep(mainList, apps, onListChange)
                 }
             }
             Row(
@@ -78,11 +83,7 @@ fun OnboardingScreen(store: Store, onDone: () -> Unit) {
                 if (step > 0) TextButton(onClick = { step-- }) { Text(stringResource(R.string.onboarding_back)) }
                 Spacer(Modifier.weight(1f))
                 Button(onClick = {
-                    if (step < STEPS - 1) step++
-                    else {
-                        store.onboardingDone = true
-                        onDone()
-                    }
+                    if (step < STEPS - 1) step++ else onDone()
                 }) {
                     Text(stringResource(if (step < STEPS - 1) R.string.onboarding_next else R.string.onboarding_finish))
                 }
@@ -193,14 +194,10 @@ private fun EnableStep() {
 }
 
 @Composable
-private fun AppsStep(store: Store) {
-    var selected by remember { mutableStateOf(store.blockedApps) }
+private fun AppsStep(mainList: AppList, apps: List<AppEntry>?, onListChange: (AppList) -> Unit) {
     Column(Modifier.fillMaxSize()) {
         Text(stringResource(R.string.onboarding_apps_title), style = MaterialTheme.typography.headlineMedium)
         Text(stringResource(R.string.onboarding_apps_text), Modifier.padding(top = 8.dp))
-        AppPicker(selected, locked = false) {
-            selected = it
-            store.blockedApps = it
-        }
+        AppPicker(mainList, locked = false, apps = apps, onChange = onListChange)
     }
 }

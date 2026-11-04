@@ -12,6 +12,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -32,22 +35,26 @@ import androidx.core.content.ContextCompat
  */
 class BlockerService : AccessibilityService() {
 
-    private lateinit var store: Store
+    private lateinit var repo: SettingsRepository
     private val handler = Handler(Looper.getMainLooper())
     private var foreground: String? = null
     private var lastBlock = 0L
     private var lastGuard = 0L
+    private var lastTick = 0L
     private var lastWorking: Boolean? = null
     private var lastStatus: String? = null
     private var essentials = emptySet<String>()
+    private var launchable = emptySet<String>()
 
     // Un horaire ou une phase de travail peut commencer pendant qu'on est déjà dans une
     // appli bloquée : aucun événement n'arrive alors, d'où cette vérification périodique.
     private val tick = object : Runnable {
         override fun run() {
             essentials = essentialPackages(this@BlockerService)
-            val now = store.now()
-            val actives = store.active(now)
+            launchable = launchableApps(this@BlockerService).map { it.packageName }.toSet()
+            val now = repo.now()
+            val actives = repo.evaluate(now)
+            recordFocus(actives, now)
             notifyPhaseChange(actives)
             updateStatus(actives, now)
             foreground?.let { check(it) }
@@ -64,7 +71,7 @@ class BlockerService : AccessibilityService() {
     }
 
     override fun onServiceConnected() {
-        store = Store(this)
+        repo = SettingsRepository.get(this)
         getSystemService(NotificationManager::class.java).createNotificationChannels(
             listOf(
                 NotificationChannel(CHANNEL_PHASES, getString(R.string.channel_breaks), NotificationManager.IMPORTANCE_HIGH),
@@ -89,7 +96,7 @@ class BlockerService : AccessibilityService() {
     override fun onInterrupt() {}
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        if (!::store.isInitialized) return
+        if (!::repo.isInitialized) return
         val pkg = event.packageName?.toString() ?: return
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
@@ -102,10 +109,15 @@ class BlockerService : AccessibilityService() {
     }
 
     private fun check(pkg: String) {
-        if (pkg == packageName || pkg in essentials) return
+        // Seules les applis du lanceur sont bloquables : jamais le clavier, l'interface système, les appels…
+        if (pkg == packageName || pkg in essentials || pkg !in launchable) return
         val t = SystemClock.elapsedRealtime()
-        if (t - lastBlock < 1000 || !store.shouldBlock(pkg, store.now())) return
+        if (t - lastBlock < 1000) return
+        val now = repo.now()
+        if (!repo.evaluate(now).blocks(pkg)) return
         lastBlock = t
+        repo.update { it.recordBlock(pkg, repo.today(now)) }
+        pauseMedia()
         performGlobalAction(GLOBAL_ACTION_HOME)
         startActivity(
             Intent(this, BlockActivity::class.java)
@@ -114,17 +126,45 @@ class BlockerService : AccessibilityService() {
         )
     }
 
+    /**
+     * Revenir à l'accueil ne coupe pas le son : YouTube, Spotify… continuent en arrière-plan.
+     * Prendre le focus audio les met en pause, comme lors d'un appel ; on le rend une seconde plus tard,
+     * et une perte définitive du focus ne les fait pas reprendre.
+     */
+    private fun pauseMedia() {
+        val audio = getSystemService(AudioManager::class.java)
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            .build()
+        if (audio.requestAudioFocus(request) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            handler.postDelayed({ audio.abandonAudioFocusRequest(request) }, 1000)
+        }
+    }
+
     /** Mode strict : quitte les écrans Paramètres / désinstallation qui mentionnent LibreBlock. */
     private fun guard(pkg: String) {
         if (pkg !in PROTECTED_PACKAGES) return
         val t = SystemClock.elapsedRealtime()
-        if (t - lastGuard < 500 || !store.isLocked(store.now())) return
+        if (t - lastGuard < 500 || !repo.evaluate().locked()) return
         val root = rootInActiveWindow ?: return
         if (root.findAccessibilityNodeInfosByText(getString(R.string.app_name)).isNullOrEmpty()) return
         lastGuard = t
         performGlobalAction(GLOBAL_ACTION_BACK)
         performGlobalAction(GLOBAL_ACTION_HOME)
         Toast.makeText(this, R.string.strict_toast, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Ajoute aux statistiques le temps passé depuis la dernière vérification, s'il y avait un blocage. */
+    private fun recordFocus(actives: List<Active>, now: Long) {
+        val t = SystemClock.elapsedRealtime()
+        val seconds = if (lastTick == 0L) 0 else ((t - lastTick) / 1000).coerceAtMost(60)
+        lastTick = t
+        if (seconds > 0 && actives.any { it.blocking }) repo.update { it.recordFocus(seconds, repo.today(now)) }
     }
 
     /** Prévient au début de chaque pause et à la reprise du travail. */

@@ -55,16 +55,20 @@ Draw-Lock $g 0 0 (512 / 108)
 $bmp.Save((Join-Path $out "icon-512.png"), [System.Drawing.Imaging.ImageFormat]::Png)
 $g.Dispose(); $bmp.Dispose()
 
-# Bannière 1024 x 500.
-$bmp, $g = New-Canvas 1024 500
-Draw-Lock $g 20 (250 - 56 * 3.6) 3.6
-$titleFont = New-Object System.Drawing.Font("Segoe UI Semibold", 64)
-$subFont = New-Object System.Drawing.Font("Segoe UI", 26)
-$brush = New-Object System.Drawing.SolidBrush($white)
-$g.DrawString("LibreBlock", $titleFont, $brush, 420, 140)
-$g.DrawString("Bloque les distractions.", $subFont, $brush, 428, 250)
-$g.DrawString("Gratuit, sans pub, sans compte.", $subFont, $brush, 428, 295)
-$bmp.Save((Join-Path $out "feature-1024x500.png"), [System.Drawing.Imaging.ImageFormat]::Png)
-$g.Dispose(); $bmp.Dispose()
+# Bannières 1024 x 500, en français et en anglais.
+function Save-Banner($file, $line1, $line2) {
+    $bmp, $g = New-Canvas 1024 500
+    Draw-Lock $g 20 (250 - 56 * 3.6) 3.6
+    $titleFont = New-Object System.Drawing.Font("Segoe UI Semibold", 64)
+    $subFont = New-Object System.Drawing.Font("Segoe UI", 26)
+    $brush = New-Object System.Drawing.SolidBrush($white)
+    $g.DrawString("LibreBlock", $titleFont, $brush, 420, 140)
+    $g.DrawString($line1, $subFont, $brush, 428, 250)
+    $g.DrawString($line2, $subFont, $brush, 428, 295)
+    $bmp.Save((Join-Path $out $file), [System.Drawing.Imaging.ImageFormat]::Png)
+    $g.Dispose(); $bmp.Dispose()
+}
+Save-Banner "feature-1024x500.png" "Bloque les distractions." "Gratuit, sans pub, sans compte."
+Save-Banner "feature-1024x500-en.png" "Block distractions." "Free, no ads, no account."
 
 Write-Output "Visuels generes dans $out"

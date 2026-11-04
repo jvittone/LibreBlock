@@ -21,6 +21,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -36,11 +37,12 @@ android {
 
     buildTypes {
         debug {
-            // gradlew assembleDebug -Ppreview : copie séparée, pour tester le premier lancement sans
-            // toucher aux réglages de l'appli installée.
+            // -Ppreview : copie séparée (com.libreblock.preview), pour tester le premier lancement et lancer
+            // les tests d'interface (que Gradle désinstalle ensuite) sans toucher à l'appli installée.
             if (project.hasProperty("preview")) applicationIdSuffix = ".preview"
         }
         release {
+            if (project.hasProperty("preview")) applicationIdSuffix = ".preview"
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -65,6 +67,20 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.activity:activity-compose:1.11.0")
     implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.datastore:datastore:1.3.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
 
     testImplementation("junit:junit:4.13.2")
+    // Vraie implémentation d'org.json pour les tests JVM (celle d'Android n'existe que sur l'appareil).
+    testImplementation("org.json:json:20250517")
+
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:core:1.7.0")
+    // Les versions plus anciennes d'Espresso plantent sur Android 16+ (InputManager.getInstance supprimé).
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

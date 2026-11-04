@@ -3,9 +3,10 @@
 Bloqueur d'applis Android gratuit, sans pub, sans compte, sans accès à Internet.
 
 <p>
-  <img src="docs/store/screenshot-1.png" width="200" alt="Accueil">
-  <img src="docs/store/screenshot-2.png" width="200" alt="Horaires">
-  <img src="docs/store/screenshot-3.png" width="200" alt="Éditeur d'horaire">
+  <img src="docs/store/fr/1-home.png" width="200" alt="Accueil">
+  <img src="docs/store/fr/2-schedules.png" width="200" alt="Horaires">
+  <img src="docs/store/fr/3-schedule-editor.png" width="200" alt="Éditeur d'horaire">
+  <img src="docs/store/fr/4-stats.png" width="200" alt="Statistiques">
 </p>
 
 ## Fonctions
@@ -13,8 +14,11 @@ Bloqueur d'applis Android gratuit, sans pub, sans compte, sans accès à Interne
 - **Sessions de travail** : alternance travail / pause (25 / 5 min par défaut), avec une notification à chaque changement.
 - **Horaires** récurrents par jour de la semaine, y compris de nuit (ex. 23:00 – 08:00). Chaque horaire utilise la
   liste principale ou sa propre liste, et peut être souple ou strict.
-- **Mode strict** : impossible d'arrêter le blocage, de retirer des applis, de désactiver le service ou de
-  désinstaller l'appli tant que la session ou l'horaire strict est en cours.
+- **Mode « tout bloquer sauf »** : chaque liste bloque soit les applis cochées, soit toutes les autres.
+- **Mode strict** : impossible d'arrêter le blocage, de rendre une liste moins stricte, de désactiver le service ou
+  de désinstaller l'appli tant que la session ou l'horaire strict est en cours.
+- **Statistiques** : temps de concentration, ouvertures bloquées, série de jours, 7 derniers jours, applis les
+  plus bloquées. Gardées 60 jours, sur le téléphone uniquement.
 
 ## Garde-fous
 Pour qu'on ne puisse jamais bloquer complètement son téléphone :
@@ -32,15 +36,30 @@ Et pour qu'on ne puisse pas contourner le mode strict :
 - **Tuile des réglages rapides** « LibreBlock » : démarre une session avec les derniers réglages, ou l'arrête.
 
 ## Architecture
+Interface **sans état** (Jetpack Compose, Material 3) → **ViewModel** (règles du mode strict et garde-fous) →
+**dépôt** unique sur **DataStore**, partagé avec le service d'accessibilité et la tuile.
+
 | Fichier | Rôle |
 |---|---|
-| `BlockerService.kt` | Service d'accessibilité : détecte l'appli au premier plan, affiche l'écran de blocage, protège les Paramètres en mode strict, notifie les pauses |
-| `Store.kt` | Modèle (horaires, sessions, cycles travail/pause) et persistance en SharedPreferences |
-| `BlockActivity.kt` | Écran « appli bloquée » |
-| `MainActivity.kt`, `AppsScreen.kt`, `SchedulesScreen.kt` | Interface Jetpack Compose (Material 3) |
-| `ScheduleTest.kt` | Tests unitaires : horaires de nuit, journées entières, cycles travail/pause |
+| `Model.kt` | Modèle immuable (`Settings`, listes, horaires, sessions, stats) et toute la logique, pure et testée en JVM |
+| `SettingsRepository.kt` | Source unique : fichier DataStore (JSON), état en mémoire (`StateFlow`), reprise des anciens réglages |
+| `MainViewModel.kt` | État de l'interface et règles appliquées avant chaque modification |
+| `TrustedClock.kt` | Heure protégée contre les changements d'heure pendant le mode strict |
+| `BlockerService.kt` | Service d'accessibilité : blocage, coupure du son, protection des Paramètres, notifications, statistiques |
+| `MainActivity.kt`, `AppsScreen.kt`, `SchedulesScreen.kt`, `StatsScreen.kt`, `OnboardingScreen.kt` | Écrans |
+| `BlockActivity.kt`, `SessionTileService.kt` | Écran « appli bloquée », tuile des réglages rapides |
 
-Kotlin, Jetpack Compose, AGP 9, aucune dépendance hors AndroidX.
+Kotlin, Jetpack Compose, DataStore, Lifecycle, AGP 9 ; aucune dépendance hors AndroidX.
+
+## Tests
+- **Unitaires** (JVM, lancés par la CI) : horaires de nuit et changement d'heure, garde-fou du mode strict,
+  heure de confiance, listes « tout bloquer sauf », statistiques, enregistrement et reprise des anciens réglages.
+- **Interface** (Compose, sur appareil) : verrouillage des listes et des horaires stricts, horaire 24 h refusé,
+  démarrage de session, statistiques. À lancer sur la copie séparée, que Gradle désinstalle ensuite :
+
+```bash
+gradlew.bat connectedDebugAndroidTest -Ppreview
+```
 
 ## Compiler
 ```bash

@@ -12,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -48,7 +50,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -56,22 +57,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.time.Instant
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: MainViewModel by viewModels()
     private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val store = Store(this)
         // Pour prévenir des pauses ; au premier lancement, c'est l'écran d'accueil qui le demande.
-        if (store.onboardingDone &&
+        if (viewModel.state.value.settings.onboardingDone &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -79,8 +80,13 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             LibreBlockTheme {
-                var onboarding by remember { mutableStateOf(!store.onboardingDone) }
-                if (onboarding) OnboardingScreen(store) { onboarding = false } else App(store)
+                val state by viewModel.state.collectAsStateWithLifecycle()
+                val apps = rememberInstalledApps()
+                if (state.settings.onboardingDone) {
+                    App(state, apps, viewModel)
+                } else {
+                    OnboardingScreen(state.settings.mainList, apps, { viewModel.setMainList(it) }, viewModel::finishOnboarding)
+                }
             }
         }
     }
@@ -90,22 +96,13 @@ private enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
     Home(R.string.tab_home, Icons.Default.Home),
     Apps(R.string.tab_apps, Icons.AutoMirrored.Filled.List),
     Schedules(R.string.tab_schedules, Icons.Default.DateRange),
+    Stats(R.string.tab_stats, Icons.Default.Star),
 }
 
 @Composable
-private fun App(store: Store) {
+private fun App(state: UiState, apps: List<AppEntry>?, viewModel: MainViewModel) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
-    // Incrémenté à chaque modification du Store pour relire les valeurs.
-    var rev by remember { mutableIntStateOf(0) }
-    val onChange: () -> Unit = { rev++ }
-    val now by produceState(store.now()) {
-        while (true) {
-            value = store.now()
-            delay(1000)
-        }
-    }
-    val locked = remember(rev, now) { store.isLocked(now) }
-    val mainListLocked = remember(rev, now) { store.mainListLocked(now) }
+    val context = LocalContext.current
 
     Scaffold(
         bottomBar = {
@@ -123,22 +120,31 @@ private fun App(store: Store) {
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (tab) {
-                Tab.Home -> HomeScreen(store, now, rev, locked, onChange)
-                Tab.Apps -> AppsScreen(store, rev, mainListLocked, onChange)
-                Tab.Schedules -> SchedulesScreen(store, rev, now, onChange)
+                Tab.Home -> HomeScreen(
+                    state,
+                    serviceOn = remember(state.now) { BlockerService.isEnabled(context) },
+                    onStart = viewModel::startSession,
+                    onStop = { viewModel.stopSession() },
+                )
+                Tab.Apps -> AppsScreen(state.settings.mainList, state.mainListLocked, apps) { viewModel.setMainList(it) }
+                Tab.Schedules -> SchedulesScreen(state, apps, viewModel::saveSchedule, viewModel::deleteSchedule)
+                Tab.Stats -> StatsScreen(
+                    state.settings.stats,
+                    Instant.ofEpochMilli(state.now).atZone(TrustedClock.zone).toLocalDate(),
+                    apps,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onChange: () -> Unit) {
+internal fun HomeScreen(state: UiState, serviceOn: Boolean, onStart: (SessionConfig) -> Unit, onStop: () -> Unit) {
     val context = LocalContext.current
-    val serviceOn = remember(now) { BlockerService.isEnabled(context) }
-    val blockedCount = remember(rev) { store.blockedApps.size }
-    val actives = remember(rev, now) { store.active(now) }
-    val session = actives.firstOrNull { it.isSession }
+    val actives = state.actives
+    val session = state.session
     val schedule = actives.filter { !it.isSession }.maxByOrNull { it.end }
+    val mainList = state.settings.mainList
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -167,7 +173,7 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
                     ),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text(pluralStringResource(R.plurals.main_list_count, blockedCount, blockedCount))
+                Text(stringResource(R.string.main_list_summary, listSummary(mainList)))
                 if (schedule != null) {
                     Text(
                         stringResource(
@@ -175,9 +181,9 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
                             formatClock(schedule.end),
                         )
                     )
-                    if (schedule.cycles) PhaseText(schedule, now)
+                    if (schedule.cycles) PhaseText(schedule, state.now)
                 }
-                if (locked) Text(stringResource(R.string.strict_locked_notice))
+                if (state.locked) Text(stringResource(R.string.strict_locked_notice))
             }
         }
 
@@ -189,19 +195,19 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
                         stringResource(if (session.cycles) R.string.session_work else R.string.session_focus),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    if (session.cycles) PhaseText(session, now, MaterialTheme.typography.headlineSmall)
+                    if (session.cycles) PhaseText(session, state.now, MaterialTheme.typography.headlineSmall)
                     Text(
-                        stringResource(R.string.session_remaining, formatCountdown(session.end - now), formatClock(session.end)) +
+                        stringResource(R.string.session_remaining, formatCountdown(session.end - state.now), formatClock(session.end)) +
                             if (session.strict) stringResource(R.string.session_strict_suffix) else "",
                         style = if (session.cycles) MaterialTheme.typography.bodyMedium
                         else MaterialTheme.typography.headlineSmall,
                     )
-                    OutlinedButton(
-                        onClick = { store.sessionEnd = 0L; onChange() },
-                        enabled = !session.strict,
-                    ) { Text(stringResource(R.string.stop_session)) }
+                    OutlinedButton(onClick = onStop, enabled = !session.strict) {
+                        Text(stringResource(R.string.stop_session))
+                    }
                 } else {
-                    NewSession(store, blockedCount, onChange)
+                    // En mode « tout bloquer sauf », une liste vide bloque tout : c'est valide.
+                    NewSession(state.settings.lastSession, canStart = mainList.allowOnly || mainList.apps.isNotEmpty(), onStart)
                 }
             }
         }
@@ -211,12 +217,12 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
 }
 
 @Composable
-private fun NewSession(store: Store, blockedCount: Int, onChange: () -> Unit) {
-    var cycles by rememberSaveable { mutableStateOf(false) }
-    var minutes by rememberSaveable { mutableFloatStateOf(30f) }
-    var work by rememberSaveable { mutableIntStateOf(25) }
-    var pause by rememberSaveable { mutableIntStateOf(5) }
-    var strict by rememberSaveable { mutableStateOf(false) }
+private fun NewSession(last: SessionConfig, canStart: Boolean, onStart: (SessionConfig) -> Unit) {
+    var cycles by rememberSaveable { mutableStateOf(last.workMin > 0) }
+    var minutes by rememberSaveable { mutableFloatStateOf(last.minutes.toFloat().coerceIn(5f, 480f)) }
+    var work by rememberSaveable { mutableIntStateOf(if (last.workMin > 0) last.workMin else 25) }
+    var pause by rememberSaveable { mutableIntStateOf(last.breakMin) }
+    var strict by rememberSaveable { mutableStateOf(last.strict) }
 
     Text(stringResource(R.string.new_session), style = MaterialTheme.typography.titleMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -244,13 +250,10 @@ private fun NewSession(store: Store, blockedCount: Int, onChange: () -> Unit) {
     }
     LabeledSwitch(stringResource(R.string.strict_session_switch), strict) { strict = it }
     Button(
-        onClick = {
-            store.startSession(minutes.toInt(), strict, if (cycles) work else 0, pause)
-            onChange()
-        },
-        enabled = blockedCount > 0,
+        onClick = { onStart(SessionConfig(minutes.toInt(), strict, if (cycles) work else 0, pause)) },
+        enabled = canStart,
     ) { Text(stringResource(R.string.start)) }
-    if (blockedCount == 0) Text(stringResource(R.string.choose_apps_first))
+    if (!canStart) Text(stringResource(R.string.choose_apps_first))
 }
 
 /** « Travail — pause dans 12:34 » ou « Pause — reprise dans 3:21 ». */

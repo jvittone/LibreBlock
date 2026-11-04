@@ -44,30 +44,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.libreblock.MainViewModel.SaveResult
 import java.time.format.TextStyle
 
 @Composable
-fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
-    val schedules = remember(rev) { store.schedules }
-    val mainList = remember(rev) { store.blockedApps }
-    val lockedIds = remember(rev, now) { store.lockedScheduleIds(now) }
+fun SchedulesScreen(
+    state: UiState,
+    apps: List<AppEntry>?,
+    onSave: (Schedule) -> SaveResult,
+    onDelete: (Long) -> Boolean,
+) {
+    val schedules = state.settings.schedules
+    val mainList = state.settings.mainList
+    val lockedIds = state.lockedScheduleIds
     var editing by remember { mutableStateOf<Schedule?>(null) }
     val context = LocalContext.current
 
-    /** Enregistre, sauf si le mode strict ne laisserait plus assez de temps libre. */
     fun save(s: Schedule): Boolean {
-        val updated = withSchedule(schedules, s)
-        if (!strictChangeAllowed(schedules, updated)) {
+        val result = onSave(s)
+        if (result == SaveResult.StrictTooLong) {
             Toast.makeText(context, R.string.error_strict_too_long, Toast.LENGTH_LONG).show()
-            return false
         }
-        store.schedules = updated
-        onChange()
-        return true
+        return result == SaveResult.Saved
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -93,8 +95,8 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
                             Text(daysLabel(s.days))
                             Text(
                                 listOfNotNull(
-                                    if (s.useMainList) stringResource(R.string.list_main_count, mainList.size)
-                                    else stringResource(R.string.list_custom_count, s.apps.size),
+                                    if (s.useMainList) stringResource(R.string.main_list_summary, listSummary(mainList))
+                                    else stringResource(R.string.custom_list_summary, listSummary(s.list)),
                                     stringResource(if (s.strict) R.string.strict_short else R.string.flexible_short),
                                     if (s.workMin > 0) stringResource(R.string.cycles_summary, s.workMin, s.breakMin)
                                     else null,
@@ -110,10 +112,9 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
                             onCheckedChange = { save(s.copy(enabled = it)) },
                             enabled = !locked,
                         )
-                        IconButton(
-                            onClick = { store.schedules = schedules.filter { it.id != s.id }; onChange() },
-                            enabled = !locked,
-                        ) { Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete)) }
+                        IconButton(onClick = { onDelete(s.id) }, enabled = !locked) {
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+                        }
                     }
                 }
             }
@@ -132,25 +133,20 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
             locked = s.id in lockedIds,
             mainList = mainList,
             schedules = schedules,
+            apps = apps,
             onDismiss = { editing = null },
         ) { if (save(it)) editing = null }
     }
 }
 
-private fun withSchedule(schedules: List<Schedule>, s: Schedule) =
-    if (schedules.any { it.id == s.id }) schedules.map { if (it.id == s.id) s else it } else schedules + s
-
-/** Refuse ce qui allongerait le verrouillage au-delà de la limite ; accepte tout ce qui le raccourcit. */
-private fun strictChangeAllowed(before: List<Schedule>, after: List<Schedule>) =
-    strictSchedulesAllowed(after) || longestStrictStretch(after) <= longestStrictStretch(before)
-
-/** locked : horaire strict en cours, on ne peut qu'ajouter des applis. */
+/** locked : horaire strict en cours, on ne peut que rendre sa liste plus stricte. */
 @Composable
-private fun ScheduleDialog(
+internal fun ScheduleDialog(
     initial: Schedule,
     locked: Boolean,
-    mainList: Set<String>,
+    mainList: AppList,
     schedules: List<Schedule>,
+    apps: List<AppEntry>?,
     onDismiss: () -> Unit,
     onSave: (Schedule) -> Unit,
 ) {
@@ -161,7 +157,7 @@ private fun ScheduleDialog(
     var work by remember { mutableIntStateOf(if (initial.workMin > 0) initial.workMin else 25) }
     var pause by remember { mutableIntStateOf(initial.breakMin) }
     var strict by remember { mutableStateOf(initial.strict) }
-    var apps by remember { mutableStateOf(initial.apps) }
+    var list by remember { mutableStateOf(initial.list) }
     var useMainList by remember { mutableStateOf(initial.useMainList) }
     var pickingStart by remember { mutableStateOf<Boolean?>(null) }
     var pickingApps by remember { mutableStateOf(false) }
@@ -169,9 +165,9 @@ private fun ScheduleDialog(
     val result = initial.copy(
         days = days, startMin = start, endMin = end,
         workMin = if (cycles) work else 0, breakMin = pause,
-        strict = strict, apps = apps, useMainList = useMainList,
+        strict = strict, list = list, useMainList = useMainList,
     )
-    val tooLong = !strictChangeAllowed(schedules, withSchedule(schedules, result))
+    val tooLong = !strictChangeAllowed(schedules, schedules.withSchedule(result))
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -180,7 +176,7 @@ private fun ScheduleDialog(
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (locked) Text(stringResource(R.string.schedule_locked_notice))
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    dayNames(TextStyle.NARROW).forEachIndexed { i, letter ->
+                    dayNames(TextStyle.NARROW, LocalConfiguration.current.locales[0]).forEachIndexed { i, letter ->
                         DayToggle(letter, (days and (1 shl i)) != 0, editable) { days = days xor (1 shl i) }
                     }
                 }
@@ -206,7 +202,7 @@ private fun ScheduleDialog(
                         selected = !useMainList,
                         onClick = {
                             useMainList = false
-                            if (apps.isEmpty()) apps = mainList
+                            if (list.apps.isEmpty() && !list.allowOnly) list = mainList
                         },
                         label = { Text(stringResource(R.string.custom_list)) },
                         enabled = editable,
@@ -214,12 +210,12 @@ private fun ScheduleDialog(
                 }
                 if (useMainList) {
                     Text(
-                        pluralStringResource(R.plurals.main_list_hint, mainList.size, mainList.size),
+                        stringResource(R.string.summary_editable, listSummary(mainList)),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 } else {
                     OutlinedButton(onClick = { pickingApps = true }, Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.choose_apps, apps.size))
+                        Text(stringResource(R.string.choose_apps, listSummary(list)))
                     }
                 }
                 LabeledSwitch(stringResource(R.string.strict_schedule_switch), strict, editable) { strict = it }
@@ -238,10 +234,9 @@ private fun ScheduleDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = { onSave(result) },
-                enabled = days != 0 && !tooLong,
-            ) { Text(stringResource(R.string.save)) }
+            TextButton(onClick = { onSave(result) }, enabled = days != 0 && !tooLong) {
+                Text(stringResource(R.string.save))
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
@@ -255,11 +250,12 @@ private fun ScheduleDialog(
     if (pickingApps) {
         AppPickerDialog(
             stringResource(R.string.schedule_apps_title),
-            initial = apps,
+            initial = list,
             locked = locked,
             mainList = mainList,
+            apps = apps,
             onDismiss = { pickingApps = false },
-        ) { apps = it; pickingApps = false }
+        ) { list = it; pickingApps = false }
     }
 }
 
@@ -284,7 +280,7 @@ private fun daysLabel(days: Int): String = when (days) {
     0b1111111 -> stringResource(R.string.every_day)
     0b0011111 -> stringResource(R.string.weekdays)
     0b1100000 -> stringResource(R.string.weekend)
-    else -> dayNames(TextStyle.SHORT).filterIndexed { i, _ -> (days and (1 shl i)) != 0 }.joinToString(" ")
+    else -> dayNames(TextStyle.SHORT, LocalConfiguration.current.locales[0]).filterIndexed { i, _ -> (days and (1 shl i)) != 0 }.joinToString(" ")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -109,7 +109,7 @@ class ScheduleTest {
     private val min = 60_000L
 
     private fun state(now: Long, end: Long = 120 * min, work: Int = 30, pause: Int = 5) =
-        activeState(0L, end, work, pause, now, strict = false, apps = emptySet(), scheduleId = 1L, usesMainList = false)
+        activeState(0L, end, work, pause, now, strict = false, list = AppList(), scheduleId = 1L, usesMainList = false)
 
     @Test
     fun continuousBlockingHasNoPhases() {

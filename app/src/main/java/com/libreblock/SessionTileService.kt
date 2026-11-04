@@ -13,24 +13,25 @@ import android.service.quicksettings.TileService
  */
 class SessionTileService : TileService() {
 
+    private val repo get() = SettingsRepository.get(this)
+
     override fun onStartListening() = refresh()
 
     override fun onClick() {
-        val store = Store(this)
-        val session = store.active(store.now()).firstOrNull { it.isSession }
+        val settings = repo.settings.value
+        val session = repo.evaluate().firstOrNull { it.isSession }
         when {
             session?.strict == true -> Unit // impossible d'arrêter une session stricte
-            session != null -> store.sessionEnd = 0L
-            store.blockedApps.isEmpty() -> openApp()
-            else -> store.startLastSession()
+            session != null -> repo.update { it.copy(session = null) }
+            !settings.mainList.allowOnly && settings.mainList.apps.isEmpty() -> openApp()
+            else -> repo.startSession(settings.lastSession)
         }
         refresh()
     }
 
     private fun refresh() {
         val tile = qsTile ?: return
-        val store = Store(this)
-        val session = store.active(store.now()).firstOrNull { it.isSession }
+        val session = repo.evaluate().firstOrNull { it.isSession }
         tile.state = if (session != null) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.label = getString(R.string.app_name)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
