@@ -9,13 +9,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import java.time.Instant
+import java.time.LocalDate
 
 /** Ce que l'interface affiche, recalculé à chaque seconde et à chaque changement de réglages. */
 data class UiState(
     val settings: Settings,
     val now: Long,
     val actives: List<Active>,
+    val today: LocalDate = Instant.ofEpochMilli(now).atZone(TrustedClock.zone).toLocalDate(),
 ) {
+    val vacation get() = settings.vacationOn(today)
     val session get() = actives.firstOrNull { it.isSession }
     val locked get() = actives.locked()
     val mainListLocked get() = actives.mainListLocked()
@@ -75,6 +79,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteSchedule(id: Long): Boolean {
         if (id in currentState().lockedScheduleIds) return false
         repo.update { s -> s.copy(schedules = s.schedules.filter { it.id != id }) }
+        return true
+    }
+
+    /** Refusé si ces vacances arrêteraient un horaire strict en cours. Les vacances passées sont oubliées. */
+    fun saveVacation(vacation: Vacation): Boolean = changeVacations { list ->
+        list.filter { it.id != vacation.id } + vacation
+    }
+
+    fun deleteVacation(id: Long): Boolean = changeVacations { list -> list.filter { it.id != id } }
+
+    private fun changeVacations(change: (List<Vacation>) -> List<Vacation>): Boolean {
+        val current = currentState()
+        val after = current.settings.copy(
+            vacations = change(current.settings.vacations).upcoming(current.today),
+        )
+        if (!vacationChangeAllowed(current.settings, after, current.now, TrustedClock.zone)) return false
+        repo.update { it.copy(vacations = after.vacations) }
         return true
     }
 

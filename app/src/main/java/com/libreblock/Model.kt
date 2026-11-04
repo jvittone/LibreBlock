@@ -43,6 +43,7 @@ data class AppList(val apps: Set<String> = emptySet(), val allowOnly: Boolean = 
  * Si endMin <= startMin, la plage déborde sur le lendemain (endMin == startMin : 24 h).
  * workMin > 0 : session de travail, alternant workMin de blocage et breakMin de pause.
  * strict : tant que l'horaire est actif, il ne peut être ni modifié ni contourné.
+ * pausedOnVacation : horaire « Travail », suspendu pendant les vacances.
  */
 data class Schedule(
     val id: Long,
@@ -55,6 +56,7 @@ data class Schedule(
     val strict: Boolean = false,
     val list: AppList = AppList(),
     val useMainList: Boolean = false,
+    val pausedOnVacation: Boolean = false,
 ) {
     fun hasDay(day: Int) = (days and (1 shl day)) != 0
 
@@ -88,6 +90,11 @@ data class Schedule(
     }
 }
 
+/** Période de vacances, du premier au dernier jour inclus : les horaires « Travail » sont suspendus. */
+data class Vacation(val id: Long, val start: LocalDate, val end: LocalDate, val label: String = "") {
+    operator fun contains(day: LocalDate) = !day.isBefore(start) && !day.isAfter(end)
+}
+
 /** Session lancée à la main (epoch ms). workMin = 0 : blocage continu. */
 data class Session(val start: Long, val end: Long, val strict: Boolean, val workMin: Int, val breakMin: Int)
 
@@ -100,6 +107,7 @@ data class DayStats(val blocked: Int = 0, val focusSeconds: Long = 0, val perApp
 data class Settings(
     val mainList: AppList = AppList(),
     val schedules: List<Schedule> = emptyList(),
+    val vacations: List<Vacation> = emptyList(),
     val session: Session? = null,
     val lastSession: SessionConfig = SessionConfig(),
     val onboardingDone: Boolean = false,
@@ -150,6 +158,8 @@ fun Settings.active(now: Long, zone: ZoneId): List<Active> {
     }
     for (s in schedules) {
         val (start, end) = s.window(now, zone) ?: continue
+        // Un horaire de nuit commencé la veille des vacances va jusqu'à son terme.
+        if (s.pausedOnVacation && vacationOn(Instant.ofEpochMilli(start).atZone(zone).toLocalDate()) != null) continue
         list += activeState(
             start, end, s.workMin, s.breakMin, now, s.strict,
             if (s.useMainList) mainList else s.list, s.id, s.useMainList,
@@ -157,6 +167,20 @@ fun Settings.active(now: Long, zone: ZoneId): List<Active> {
     }
     return list
 }
+
+fun Settings.vacationOn(day: LocalDate): Vacation? = vacations.firstOrNull { day in it }
+
+/**
+ * Des vacances ajoutées, déplacées ou supprimées ne doivent pas interrompre un horaire strict déjà en cours :
+ * sinon ce serait un moyen de contourner le mode strict.
+ */
+fun vacationChangeAllowed(before: Settings, after: Settings, now: Long, zone: ZoneId): Boolean {
+    val locked = before.active(now, zone).lockedScheduleIds()
+    return after.active(now, zone).mapNotNull { it.scheduleId }.toSet().containsAll(locked)
+}
+
+/** Vacances à afficher : en cours ou à venir, de la plus proche à la plus lointaine. */
+fun List<Vacation>.upcoming(today: LocalDate) = filter { !it.end.isBefore(today) }.sortedBy { it.start }
 
 /** Un blocage strict est actif (pauses comprises) : LibreBlock ne peut pas être désactivé. */
 fun List<Active>.locked() = any { it.strict }
@@ -294,6 +318,10 @@ fun Settings.toJson(): String = JSONObject()
             .put("id", it.id).put("days", it.days).put("start", it.startMin).put("end", it.endMin)
             .put("enabled", it.enabled).put("work", it.workMin).put("break", it.breakMin)
             .put("strict", it.strict).put("list", it.list.toJson()).put("main", it.useMainList)
+            .put("vacation", it.pausedOnVacation)
+    }))
+    .put("vacations", JSONArray(vacations.map {
+        JSONObject().put("id", it.id).put("start", it.start.toString()).put("end", it.end.toString()).put("label", it.label)
     }))
     .put("session", session?.let {
         JSONObject().put("start", it.start).put("end", it.end).put("strict", it.strict)
@@ -313,16 +341,24 @@ fun Settings.toJson(): String = JSONObject()
 fun settingsFromJson(text: String): Settings {
     val o = JSONObject(text)
     val schedules = o.optJSONArray("schedules") ?: JSONArray()
+    val vacations = o.optJSONArray("vacations") ?: JSONArray()
     val stats = o.optJSONObject("stats") ?: JSONObject()
     return Settings(
         mainList = o.optJSONObject("mainList").toAppList(),
         schedules = List(schedules.length()) { i ->
             val s = schedules.getJSONObject(i)
+            val work = s.optInt("work", 0)
             Schedule(
                 s.getLong("id"), s.getInt("days"), s.getInt("start"), s.getInt("end"), s.optBoolean("enabled", true),
-                s.optInt("work", 0), s.optInt("break", 5), s.optBoolean("strict", false),
+                work, s.optInt("break", 5), s.optBoolean("strict", false),
                 s.optJSONObject("list").toAppList(), s.optBoolean("main", false),
+                // Avant les vacances : les sessions de travail (avec pauses) sont considérées comme du travail.
+                pausedOnVacation = s.optBoolean("vacation", work > 0),
             )
+        },
+        vacations = List(vacations.length()) { i ->
+            val v = vacations.getJSONObject(i)
+            Vacation(v.getLong("id"), LocalDate.parse(v.getString("start")), LocalDate.parse(v.getString("end")), v.optString("label"))
         },
         session = o.optJSONObject("session")?.let {
             Session(it.getLong("start"), it.getLong("end"), it.optBoolean("strict"), it.optInt("work"), it.optInt("break", 5))
@@ -358,6 +394,7 @@ fun legacySettings(prefs: Map<String, Any?>): Settings {
             strict = if (v2) s.optBoolean("strict", false) else legacyStrict,
             list = AppList(if (v2 && apps != null) List(apps.length()) { apps.getString(it) }.toSet() else mainApps),
             useMainList = s.optBoolean("main", false),
+            pausedOnVacation = s.optInt("work", 0) > 0,
         )
     }
     val end = prefs["session_end"] as? Long ?: 0L
@@ -386,6 +423,10 @@ private fun clock() = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withL
 fun formatMinutes(m: Int): String = clock().format(LocalTime.of(m / 60, m % 60))
 
 fun formatClock(epochMs: Long): String = clock().format(Instant.ofEpochMilli(epochMs).atZone(TrustedClock.zone))
+
+/** « 12 nov. 2026 » en français, « Nov 12, 2026 » en anglais. */
+fun formatDate(day: LocalDate, locale: Locale = Locale.getDefault()): String =
+    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale).format(day)
 
 fun formatDuration(minutes: Int) = if (minutes < 60) "$minutes min" else "%dh%02d".format(minutes / 60, minutes % 60)
 

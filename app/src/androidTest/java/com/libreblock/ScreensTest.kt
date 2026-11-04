@@ -72,7 +72,11 @@ class ScreensTest {
         val schedule = Schedule(1, 0b1111111, 9 * 60, 12 * 60, strict = true)
         compose.setContent {
             LibreBlockTheme {
-                SchedulesScreen(stateWith(schedule, running = true), apps, { SaveResult.Saved }) { deleted = true; true }
+                SchedulesScreen(
+                    stateWith(schedule, running = true), apps,
+                    onSave = { SaveResult.Saved }, onDelete = { deleted = true; true },
+                    onSaveVacation = { true }, onDeleteVacation = { true },
+                )
             }
         }
         compose.onAllNodesWithContentDescription(str(R.string.delete))[0].assertIsNotEnabled()
@@ -84,9 +88,37 @@ class ScreensTest {
     fun flexibleScheduleCanBeDeleted() {
         val schedule = Schedule(1, 0b1111111, 9 * 60, 12 * 60, strict = false)
         compose.setContent {
-            LibreBlockTheme { SchedulesScreen(stateWith(schedule, running = true), apps, { SaveResult.Saved }) { true } }
+            LibreBlockTheme {
+                SchedulesScreen(
+                    stateWith(schedule, running = true), apps,
+                    onSave = { SaveResult.Saved }, onDelete = { true },
+                    onSaveVacation = { true }, onDeleteVacation = { true },
+                )
+            }
         }
         compose.onAllNodesWithContentDescription(str(R.string.delete))[0].assertIsEnabled()
+    }
+
+    @Test
+    fun workScheduleShowsSuspendedDuringVacations() {
+        val today = LocalDate.of(2026, 11, 4)
+        val now = today.atTime(10, 0).atZone(TrustedClock.zone).toInstant().toEpochMilli()
+        val settings = Settings(
+            schedules = listOf(Schedule(1, 0b1111111, 9 * 60, 12 * 60, pausedOnVacation = true)),
+            vacations = listOf(Vacation(5, today, today.plusDays(3), "Toussaint")),
+        )
+        compose.setContent {
+            LibreBlockTheme {
+                SchedulesScreen(
+                    UiState(settings, now, settings.active(now, TrustedClock.zone), today), apps,
+                    onSave = { SaveResult.Saved }, onDelete = { true },
+                    onSaveVacation = { true }, onDeleteVacation = { true },
+                )
+            }
+        }
+        compose.onNodeWithText(str(R.string.suspended_vacation)).assertExists()
+        compose.onNodeWithText("Toussaint").assertExists()
+        compose.onNodeWithText(str(R.string.vacation_now)).assertExists()
     }
 
     @Test

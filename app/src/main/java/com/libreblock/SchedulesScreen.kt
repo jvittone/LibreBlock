@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -30,10 +32,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +53,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.libreblock.MainViewModel.SaveResult
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.format.TextStyle
 
 @Composable
@@ -57,12 +64,18 @@ fun SchedulesScreen(
     apps: List<AppEntry>?,
     onSave: (Schedule) -> SaveResult,
     onDelete: (Long) -> Boolean,
+    onSaveVacation: (Vacation) -> Boolean,
+    onDeleteVacation: (Long) -> Boolean,
 ) {
     val schedules = state.settings.schedules
     val mainList = state.settings.mainList
     val lockedIds = state.lockedScheduleIds
     var editing by remember { mutableStateOf<Schedule?>(null) }
+    var editingVacation by remember { mutableStateOf<Vacation?>(null) }
     val context = LocalContext.current
+
+    fun vacationRefused() =
+        Toast.makeText(context, R.string.vacation_locked, Toast.LENGTH_LONG).show()
 
     fun save(s: Schedule): Boolean {
         val result = onSave(s)
@@ -98,6 +111,7 @@ fun SchedulesScreen(
                                     if (s.useMainList) stringResource(R.string.main_list_summary, listSummary(mainList))
                                     else stringResource(R.string.custom_list_summary, listSummary(s.list)),
                                     stringResource(if (s.strict) R.string.strict_short else R.string.flexible_short),
+                                    if (s.pausedOnVacation) stringResource(R.string.work_short) else null,
                                     if (s.workMin > 0) stringResource(R.string.cycles_summary, s.workMin, s.breakMin)
                                     else null,
                                 ).joinToString(" · "),
@@ -105,6 +119,8 @@ fun SchedulesScreen(
                             )
                             if (locked) {
                                 Text(stringResource(R.string.locked_running), style = MaterialTheme.typography.bodySmall)
+                            } else if (s.pausedOnVacation && state.vacation != null) {
+                                Text(stringResource(R.string.suspended_vacation), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                         Switch(
@@ -117,6 +133,39 @@ fun SchedulesScreen(
                         }
                     }
                 }
+            }
+            item {
+                Text(
+                    stringResource(R.string.vacations_title),
+                    Modifier.padding(top = 16.dp),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Text(stringResource(R.string.vacations_hint), style = MaterialTheme.typography.bodySmall)
+            }
+            items(state.settings.vacations.upcoming(state.today), key = { "vacation-${it.id}" }) { v ->
+                val locale = LocalConfiguration.current.locales[0]
+                Card(Modifier.fillMaxWidth().clickable { editingVacation = v }) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                stringResource(R.string.vacation_dates, formatDate(v.start, locale), formatDate(v.end, locale)),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            if (v.label.isNotBlank()) Text(v.label)
+                            if (state.today in v) {
+                                Text(stringResource(R.string.vacation_now), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        IconButton(onClick = { if (!onDeleteVacation(v.id)) vacationRefused() }) {
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+                        }
+                    }
+                }
+            }
+            item {
+                OutlinedButton(onClick = {
+                    editingVacation = Vacation(System.currentTimeMillis(), state.today, state.today.plusDays(6))
+                }) { Text(stringResource(R.string.add_vacation)) }
             }
         }
         FloatingActionButton(
@@ -136,6 +185,48 @@ fun SchedulesScreen(
             apps = apps,
             onDismiss = { editing = null },
         ) { if (save(it)) editing = null }
+    }
+    editingVacation?.let { v ->
+        VacationDialog(v, onDismiss = { editingVacation = null }) {
+            if (onSaveVacation(it)) editingVacation = null else vacationRefused()
+        }
+    }
+}
+
+/** Choix des dates (calendrier de période) et d'un nom facultatif. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun VacationDialog(initial: Vacation, onDismiss: () -> Unit, onSave: (Vacation) -> Unit) {
+    // Le calendrier travaille en millisecondes UTC à minuit.
+    fun LocalDate.millis() = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    fun Long.date() = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+
+    val dates = rememberDateRangePickerState(
+        initialSelectedStartDateMillis = initial.start.millis(),
+        initialSelectedEndDateMillis = initial.end.millis(),
+    )
+    var label by remember { mutableStateOf(initial.label) }
+    val start = dates.selectedStartDateMillis
+    val end = dates.selectedEndDateMillis ?: start
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(initial.copy(start = start!!.date(), end = end!!.date(), label = label.trim())) },
+                enabled = start != null,
+            ) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = { label = it },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+            placeholder = { Text(stringResource(R.string.vacation_label_hint)) },
+            singleLine = true,
+        )
+        DateRangePicker(state = dates, modifier = Modifier.weight(1f), title = null, showModeToggle = false)
     }
 }
 
@@ -159,13 +250,14 @@ internal fun ScheduleDialog(
     var strict by remember { mutableStateOf(initial.strict) }
     var list by remember { mutableStateOf(initial.list) }
     var useMainList by remember { mutableStateOf(initial.useMainList) }
+    var pausedOnVacation by remember { mutableStateOf(initial.pausedOnVacation) }
     var pickingStart by remember { mutableStateOf<Boolean?>(null) }
     var pickingApps by remember { mutableStateOf(false) }
     val editable = !locked
     val result = initial.copy(
         days = days, startMin = start, endMin = end,
         workMin = if (cycles) work else 0, breakMin = pause,
-        strict = strict, list = list, useMainList = useMainList,
+        strict = strict, list = list, useMainList = useMainList, pausedOnVacation = pausedOnVacation,
     )
     val tooLong = !strictChangeAllowed(schedules, schedules.withSchedule(result))
 
@@ -226,7 +318,11 @@ internal fun ScheduleDialog(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                LabeledSwitch(stringResource(R.string.cycles_switch), cycles, editable) { cycles = it }
+                LabeledSwitch(stringResource(R.string.cycles_switch), cycles, editable) {
+                    cycles = it
+                    if (it) pausedOnVacation = true // une session de travail est a priori du travail
+                }
+                LabeledSwitch(stringResource(R.string.work_switch), pausedOnVacation, editable) { pausedOnVacation = it }
                 if (cycles) {
                     Stepper(stringResource(R.string.work), work, 5..120, 5, editable) { work = it }
                     Stepper(stringResource(R.string.break_label), pause, 1..60, 1, editable) { pause = it }

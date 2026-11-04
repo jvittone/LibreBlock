@@ -56,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -127,7 +128,11 @@ private fun App(state: UiState, apps: List<AppEntry>?, viewModel: MainViewModel)
                     onStop = { viewModel.stopSession() },
                 )
                 Tab.Apps -> AppsScreen(state.settings.mainList, state.mainListLocked, apps) { viewModel.setMainList(it) }
-                Tab.Schedules -> SchedulesScreen(state, apps, viewModel::saveSchedule, viewModel::deleteSchedule)
+                Tab.Schedules -> SchedulesScreen(
+                    state, apps,
+                    viewModel::saveSchedule, viewModel::deleteSchedule,
+                    viewModel::saveVacation, viewModel::deleteVacation,
+                )
                 Tab.Stats -> StatsScreen(
                     state.settings.stats,
                     Instant.ofEpochMilli(state.now).atZone(TrustedClock.zone).toLocalDate(),
@@ -174,6 +179,9 @@ internal fun HomeScreen(state: UiState, serviceOn: Boolean, onStart: (SessionCon
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(stringResource(R.string.main_list_summary, listSummary(mainList)))
+                state.vacation?.let {
+                    Text(stringResource(R.string.on_vacation, formatDate(it.end, LocalConfiguration.current.locales[0])))
+                }
                 if (schedule != null) {
                     Text(
                         stringResource(

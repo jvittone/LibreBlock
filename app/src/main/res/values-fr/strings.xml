@@ -101,6 +101,19 @@
     <string name="choose_apps">Choisir les applis (%s)</string>
     <string name="strict_schedule_switch">Strict (impossible de modifier ou contourner pendant l\'horaire)</string>
     <string name="cycles_switch">Session de travail (avec pauses)</string>
+    <string name="work_switch">Travail (suspendu pendant les vacances)</string>
+    <string name="work_short">travail</string>
+    <string name="suspended_vacation">Suspendu (vacances)</string>
+
+    <!-- Vacances -->
+    <string name="vacations_title">Vacances</string>
+    <string name="vacations_hint">Les horaires marqués « Travail » sont suspendus pendant les vacances. Les autres continuent.</string>
+    <string name="add_vacation">Ajouter des vacances</string>
+    <string name="vacation_dates">%1$s → %2$s</string>
+    <string name="vacation_now">En cours</string>
+    <string name="vacation_label_hint">Nom (facultatif)</string>
+    <string name="vacation_locked">Un horaire strict est en cours : des vacances ne peuvent pas l\'arrêter. Réessaie quand il sera terminé.</string>
+    <string name="on_vacation">🏖 En vacances jusqu\'au %s : les horaires de travail sont suspendus</string>
     <string name="error_strict_too_long">Les horaires stricts doivent laisser au moins 2 heures d\'affilée libres chaque jour, pour que tu ne puisses jamais bloquer complètement ton téléphone.</string>
     <string name="save">Enregistrer</string>
     <string name="cancel">Annuler</string>

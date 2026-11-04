@@ -100,6 +100,19 @@
     <string name="choose_apps">Choose apps (%s)</string>
     <string name="strict_schedule_switch">Strict (can\'t be changed or bypassed while running)</string>
     <string name="cycles_switch">Work session (with breaks)</string>
+    <string name="work_switch">Work (suspended during vacations)</string>
+    <string name="work_short">work</string>
+    <string name="suspended_vacation">Suspended (vacations)</string>
+
+    <!-- Vacations -->
+    <string name="vacations_title">Vacations</string>
+    <string name="vacations_hint">Schedules marked “Work” are suspended during vacations. The others keep running.</string>
+    <string name="add_vacation">Add vacations</string>
+    <string name="vacation_dates">%1$s → %2$s</string>
+    <string name="vacation_now">In progress</string>
+    <string name="vacation_label_hint">Name (optional)</string>
+    <string name="vacation_locked">A strict schedule is running: vacations can\'t stop it. Try again once it\'s over.</string>
+    <string name="on_vacation">🏖 On vacation until %s: work schedules are suspended</string>
     <string name="error_strict_too_long">Strict schedules must leave at least 2 hours in a row free every day, so you can never lock yourself out of your phone.</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>

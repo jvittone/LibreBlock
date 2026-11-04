@@ -88,8 +88,11 @@ class ModelTest {
         val settings = Settings(
             mainList = AppList(setOf(yt, maps), allowOnly = true),
             schedules = listOf(
-                Schedule(7, 0b0011111, 9 * 60, 12 * 60, workMin = 25, strict = true, list = AppList(setOf(yt)), useMainList = false),
+                Schedule(7, 0b0011111, 9 * 60, 12 * 60, workMin = 25, strict = true, list = AppList(setOf(yt)),
+                    useMainList = false, pausedOnVacation = true),
+                Schedule(8, 0b1111111, 23 * 60, 8 * 60, pausedOnVacation = false),
             ),
+            vacations = listOf(Vacation(3, LocalDate.of(2026, 12, 20), LocalDate.of(2027, 1, 3), "Noël")),
             session = Session(1_000, 2_000, true, 25, 5),
             lastSession = SessionConfig(50, true, 25, 5),
             onboardingDone = true,
