@@ -1,6 +1,7 @@
 package com.libreblock
 
 import android.text.format.DateFormat
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,12 +56,18 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
     val mainList = remember(rev) { store.blockedApps }
     val lockedIds = remember(rev, now) { store.lockedScheduleIds(now) }
     var editing by remember { mutableStateOf<Schedule?>(null) }
+    val context = LocalContext.current
 
-    fun save(s: Schedule) {
-        store.schedules =
-            if (schedules.any { it.id == s.id }) schedules.map { if (it.id == s.id) s else it }
-            else schedules + s
+    /** Enregistre, sauf si le mode strict ne laisserait plus assez de temps libre. */
+    fun save(s: Schedule): Boolean {
+        val updated = withSchedule(schedules, s)
+        if (!strictChangeAllowed(schedules, updated)) {
+            Toast.makeText(context, R.string.error_strict_too_long, Toast.LENGTH_LONG).show()
+            return false
+        }
+        store.schedules = updated
         onChange()
+        return true
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -124,10 +131,18 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
             s,
             locked = s.id in lockedIds,
             mainList = mainList,
+            schedules = schedules,
             onDismiss = { editing = null },
-        ) { save(it); editing = null }
+        ) { if (save(it)) editing = null }
     }
 }
+
+private fun withSchedule(schedules: List<Schedule>, s: Schedule) =
+    if (schedules.any { it.id == s.id }) schedules.map { if (it.id == s.id) s else it } else schedules + s
+
+/** Refuse ce qui allongerait le verrouillage au-delà de la limite ; accepte tout ce qui le raccourcit. */
+private fun strictChangeAllowed(before: List<Schedule>, after: List<Schedule>) =
+    strictSchedulesAllowed(after) || longestStrictStretch(after) <= longestStrictStretch(before)
 
 /** locked : horaire strict en cours, on ne peut qu'ajouter des applis. */
 @Composable
@@ -135,6 +150,7 @@ private fun ScheduleDialog(
     initial: Schedule,
     locked: Boolean,
     mainList: Set<String>,
+    schedules: List<Schedule>,
     onDismiss: () -> Unit,
     onSave: (Schedule) -> Unit,
 ) {
@@ -150,6 +166,12 @@ private fun ScheduleDialog(
     var pickingStart by remember { mutableStateOf<Boolean?>(null) }
     var pickingApps by remember { mutableStateOf(false) }
     val editable = !locked
+    val result = initial.copy(
+        days = days, startMin = start, endMin = end,
+        workMin = if (cycles) work else 0, breakMin = pause,
+        strict = strict, apps = apps, useMainList = useMainList,
+    )
+    val tooLong = !strictChangeAllowed(schedules, withSchedule(schedules, result))
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -201,6 +223,13 @@ private fun ScheduleDialog(
                     }
                 }
                 LabeledSwitch(stringResource(R.string.strict_schedule_switch), strict, editable) { strict = it }
+                if (tooLong) {
+                    Text(
+                        stringResource(R.string.error_strict_too_long),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 LabeledSwitch(stringResource(R.string.cycles_switch), cycles, editable) { cycles = it }
                 if (cycles) {
                     Stepper(stringResource(R.string.work), work, 5..120, 5, editable) { work = it }
@@ -210,16 +239,8 @@ private fun ScheduleDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = {
-                    onSave(
-                        initial.copy(
-                            days = days, startMin = start, endMin = end,
-                            workMin = if (cycles) work else 0, breakMin = pause,
-                            strict = strict, apps = apps, useMainList = useMainList,
-                        )
-                    )
-                },
-                enabled = days != 0,
+                onClick = { onSave(result) },
+                enabled = days != 0 && !tooLong,
             ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },

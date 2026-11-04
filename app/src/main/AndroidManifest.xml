@@ -4,11 +4,15 @@
     <!-- Notifications de début / fin de pause. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Pour lister les applis installées (Android 11+). -->
+    <!-- Pour lister les applis installées et les écrans d'accueil, jamais bloqués (Android 11+). -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
         </intent>
     </queries>
 

@@ -55,6 +55,61 @@ data class Schedule(
     }
 }
 
+/** Temps libre minimal, d'affilée, que les horaires stricts doivent laisser toutes les 24 h. */
+const val MIN_FREE_MIN = 2 * 60
+
+/** Durée maximale d'une période stricte continue. */
+const val MAX_STRICT_MIN = 24 * 60 - MIN_FREE_MIN
+
+private const val WEEK_MIN = 7 * 24 * 60
+
+/**
+ * Plus longue période, en minutes, pendant laquelle les horaires stricts actifs verrouillent l'appli
+ * sur une semaine type. Les trous de moins de MIN_FREE_MIN comptent comme verrouillés : ils sont trop
+ * courts pour modifier quoi que ce soit. Renvoie WEEK_MIN si le verrouillage ne s'arrête jamais.
+ */
+fun longestStrictStretch(schedules: List<Schedule>): Int {
+    val locked = BooleanArray(WEEK_MIN)
+    for (s in schedules) {
+        if (!s.enabled || !s.strict) continue
+        for (day in 0..6) {
+            if (!s.hasDay(day)) continue
+            val start = day * 24 * 60 + s.startMin
+            for (m in 0 until s.durationMin) locked[(start + m) % WEEK_MIN] = true
+        }
+    }
+    // La semaine boucle : on la parcourt à partir du début d'un moment libre.
+    val origin = (0 until WEEK_MIN).firstOrNull { !locked[it] && locked[(it + WEEK_MIN - 1) % WEEK_MIN] }
+        ?: return if (locked[0]) WEEK_MIN else 0
+    val runs = mutableListOf<Pair<Boolean, Int>>() // (verrouillé, durée), alternés, en commençant par du libre
+    for (i in 0 until WEEK_MIN) {
+        val value = locked[(origin + i) % WEEK_MIN]
+        if (runs.isNotEmpty() && runs.last().first == value) runs[runs.lastIndex] = value to runs.last().second + 1
+        else runs += value to 1
+    }
+    // Comble les trous trop courts : chaque période verrouillée absorbe le trou qui la précède.
+    var longest = 0
+    var current = 0
+    for ((isLocked, length) in runs) {
+        current = when {
+            isLocked -> current + length
+            length < MIN_FREE_MIN -> current + length
+            else -> 0
+        }
+        longest = maxOf(longest, current)
+    }
+    // Le premier trou, s'il est court, relie la dernière période à la première.
+    val firstGap = runs.first().second
+    if (firstGap < MIN_FREE_MIN && runs.size > 1) {
+        val head = runs.drop(1).takeWhile { it.first || it.second < MIN_FREE_MIN }.sumOf { it.second }
+        longest = maxOf(longest, current + firstGap + head)
+    }
+    return minOf(longest, WEEK_MIN)
+}
+
+/** Vrai si ces horaires laissent toujours assez de temps libre pour reprendre la main sur le téléphone. */
+fun strictSchedulesAllowed(schedules: List<Schedule>) = longestStrictStretch(schedules) <= MAX_STRICT_MIN
+
 /** Un blocage en cours : la session manuelle ou un horaire. */
 data class Active(
     val end: Long,

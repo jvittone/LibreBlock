@@ -63,6 +63,7 @@
     <string name="search_apps">Search apps</string>
     <string name="picker_locked">🔒 Strict mode: you can add apps, not remove them.</string>
     <string name="add_main_list">Add the main list</string>
+    <string name="essentials_note">The home screen, the Phone app and LibreBlock can never be blocked.</string>
     <string name="schedule_apps_title">Schedule apps</string>
 
     <!-- Schedules -->
@@ -91,6 +92,7 @@
     <string name="choose_apps">Choose apps (%d)</string>
     <string name="strict_schedule_switch">Strict (can\'t be changed or bypassed while running)</string>
     <string name="cycles_switch">Work session (with breaks)</string>
+    <string name="error_strict_too_long">Strict schedules must leave at least 2 hours in a row free every day, so you can never lock yourself out of your phone.</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>

@@ -84,6 +84,11 @@ fun AppPicker(selected: Set<String>, locked: Boolean, onChange: (Set<String>) ->
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
         )
+        Text(
+            stringResource(R.string.essentials_note),
+            Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
+            style = MaterialTheme.typography.bodySmall,
+        )
         if (locked) {
             Text(
                 stringResource(R.string.picker_locked),
@@ -152,11 +157,12 @@ fun AppPickerDialog(
 private fun loadApps(context: Context, selected: Set<String>): List<AppEntry> {
     val pm = context.packageManager
     val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+    val essentials = essentialPackages(context)
     @Suppress("DEPRECATION")
     return pm.queryIntentActivities(launcher, 0)
         .map { it.activityInfo.applicationInfo }
         .distinctBy { it.packageName }
-        .filter { it.packageName != context.packageName }
+        .filter { it.packageName !in essentials }
         .map {
             AppEntry(
                 pkg = it.packageName,

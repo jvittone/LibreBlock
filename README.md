@@ -16,6 +16,12 @@ Bloqueur d'applis Android gratuit, sans pub, sans compte, sans accès à Interne
 - **Mode strict** : impossible d'arrêter le blocage, de retirer des applis, de désactiver le service ou de
   désinstaller l'appli tant que la session ou l'horaire strict est en cours.
 
+## Garde-fous
+Pour qu'on ne puisse jamais bloquer complètement son téléphone :
+- l'écran d'accueil, l'appli Téléphone par défaut (urgences) et LibreBlock ne peuvent pas être bloqués ;
+- les horaires stricts, même cumulés, doivent laisser au moins 2 heures libres d'affilée toutes les 24 h
+  (les trous plus courts comptent comme verrouillés) ; une session stricte manuelle dure au plus 8 h.
+
 ## Architecture
 | Fichier | Rôle |
 |---|---|

@@ -60,6 +60,52 @@ class ScheduleTest {
         assertNull(schedule(weekdays, 9, 17, enabled = false).activeSince(mon(10)))
     }
 
+    private val everyDay = 0b1111111
+    private fun strict(days: Int, start: Int, end: Int, enabled: Boolean = true) =
+        Schedule(id = start * 100L + end, days = days, startMin = start * 60, endMin = end * 60,
+            enabled = enabled, strict = true)
+
+    @Test
+    fun nightAndWorkdayAreAllowed() {
+        val night = strict(everyDay, 23, 8)
+        val work = strict(weekdays, 9, 12)
+        // Le trou de 8 h à 9 h est trop court : la nuit et la matinée forment une seule période de 13 h.
+        assertEquals(13 * 60, longestStrictStretch(listOf(night, work)))
+        assertTrue(strictSchedulesAllowed(listOf(night, work)))
+    }
+
+    @Test
+    fun roundTheClockStrictIsRefused() {
+        assertFalse(strictSchedulesAllowed(listOf(strict(everyDay, 6, 6))))
+        assertFalse(strictSchedulesAllowed(listOf(strict(everyDay, 0, 12), strict(everyDay, 12, 0))))
+        // Un trou d'une heure par jour ne suffit pas pour reprendre la main.
+        assertFalse(strictSchedulesAllowed(listOf(strict(everyDay, 0, 12), strict(everyDay, 13, 0))))
+    }
+
+    @Test
+    fun twoFreeHoursADayAreEnough() {
+        // 14 h – minuit puis minuit – 12 h le lendemain : 22 h d'affilée, puis 2 h libres.
+        val schedules = listOf(strict(everyDay, 0, 12), strict(everyDay, 14, 0))
+        assertEquals(22 * 60, longestStrictStretch(schedules))
+        assertTrue(strictSchedulesAllowed(schedules))
+        assertTrue(strictSchedulesAllowed(listOf(strict(everyDay, 2, 0)))) // 22 h strictes, 2 h libres
+        assertFalse(strictSchedulesAllowed(listOf(strict(everyDay, 1, 0)))) // 23 h strictes
+    }
+
+    @Test
+    fun stretchCanSpanSeveralDays() {
+        // Un samedi de 24 h et un dimanche de 24 h stricts bout à bout : 48 h verrouillées.
+        val weekend = strict(0b1100000, 0, 0)
+        assertEquals(48 * 60, longestStrictStretch(listOf(weekend)))
+        assertFalse(strictSchedulesAllowed(listOf(weekend)))
+    }
+
+    @Test
+    fun flexibleAndDisabledSchedulesDoNotCount() {
+        val flexible = Schedule(id = 1, days = everyDay, startMin = 0, endMin = 0)
+        assertEquals(0, longestStrictStretch(listOf(flexible, strict(everyDay, 6, 6, enabled = false))))
+    }
+
     private val min = 60_000L
 
     private fun state(now: Long, end: Long = 120 * min, work: Int = 30, pause: Int = 5) =

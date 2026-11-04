@@ -32,11 +32,13 @@ class BlockerService : AccessibilityService() {
     private var lastBlock = 0L
     private var lastGuard = 0L
     private var lastWorking: Boolean? = null
+    private var essentials = emptySet<String>()
 
     // Un horaire ou une phase de travail peut commencer pendant qu'on est déjà dans une
     // appli bloquée : aucun événement n'arrive alors, d'où cette vérification périodique.
     private val tick = object : Runnable {
         override fun run() {
+            essentials = essentialPackages(this@BlockerService)
             notifyPhaseChange()
             foreground?.let { check(it) }
             handler.postDelayed(this, CHECK_INTERVAL_MS)
@@ -72,7 +74,7 @@ class BlockerService : AccessibilityService() {
     }
 
     private fun check(pkg: String) {
-        if (pkg == packageName) return
+        if (pkg == packageName || pkg in essentials) return
         val now = System.currentTimeMillis()
         if (!store.shouldBlock(pkg, now) || now - lastBlock < 1000) return
         lastBlock = now

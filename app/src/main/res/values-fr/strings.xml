@@ -63,6 +63,7 @@
     <string name="search_apps">Rechercher une appli</string>
     <string name="picker_locked">🔒 Mode strict : tu peux ajouter des applis, pas en retirer.</string>
     <string name="add_main_list">Ajouter la liste principale</string>
+    <string name="essentials_note">L\'écran d\'accueil, l\'appli Téléphone et LibreBlock ne peuvent jamais être bloqués.</string>
     <string name="schedule_apps_title">Applis de l\'horaire</string>
 
     <!-- Horaires -->
@@ -92,6 +93,7 @@
     <string name="choose_apps">Choisir les applis (%d)</string>
     <string name="strict_schedule_switch">Strict (impossible de modifier ou contourner pendant l\'horaire)</string>
     <string name="cycles_switch">Session de travail (avec pauses)</string>
+    <string name="error_strict_too_long">Les horaires stricts doivent laisser au moins 2 heures d\'affilée libres chaque jour, pour que tu ne puisses jamais bloquer complètement ton téléphone.</string>
     <string name="save">Enregistrer</string>
     <string name="cancel">Annuler</string>
     <string name="ok">OK</string>
