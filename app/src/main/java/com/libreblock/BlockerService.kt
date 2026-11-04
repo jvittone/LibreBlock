@@ -46,7 +46,7 @@ class BlockerService : AccessibilityService() {
     override fun onServiceConnected() {
         store = Store(this)
         getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(CHANNEL_PHASES, "Pauses des sessions de travail", NotificationManager.IMPORTANCE_HIGH)
+            NotificationChannel(CHANNEL_PHASES, getString(R.string.channel_breaks), NotificationManager.IMPORTANCE_HIGH)
         )
         handler.post(tick)
     }
@@ -94,7 +94,7 @@ class BlockerService : AccessibilityService() {
         lastGuard = now
         performGlobalAction(GLOBAL_ACTION_BACK)
         performGlobalAction(GLOBAL_ACTION_HOME)
-        Toast.makeText(this, "Mode strict actif", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.strict_toast, Toast.LENGTH_SHORT).show()
     }
 
     /** Prévient au début de chaque pause et à la reprise du travail. */
@@ -104,9 +104,9 @@ class BlockerService : AccessibilityService() {
         val working = cycle?.blocking
         if (cycle != null && lastWorking != null && working != lastWorking) {
             val text = when {
-                !cycle.blocking -> "Pause ! Reprise à ${formatClock(cycle.phaseEnd)}"
-                cycle.phaseEnd < cycle.end -> "Au travail ! Prochaine pause à ${formatClock(cycle.phaseEnd)}"
-                else -> "Au travail ! Fin de la session à ${formatClock(cycle.end)}"
+                !cycle.blocking -> getString(R.string.notif_break, formatClock(cycle.phaseEnd))
+                cycle.phaseEnd < cycle.end -> getString(R.string.notif_work_next, formatClock(cycle.phaseEnd))
+                else -> getString(R.string.notif_work_end, formatClock(cycle.end))
             }
             postNotification(text)
         }

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_summary">Bloque les applis que tu as choisies</string>
+    <string name="accessibility_description">LibreBlock utilise l\'accessibilité pour savoir quelle appli est ouverte et afficher l\'écran de blocage. En mode strict, il lit aussi le texte des écrans Paramètres pour empêcher de désactiver ou désinstaller LibreBlock. Aucune donnée n\'est collectée ni envoyée : l\'appli n\'a pas accès à Internet.</string>
+
+    <!-- Navigation -->
+    <string name="tab_home">Accueil</string>
+    <string name="tab_apps">Applis</string>
+    <string name="tab_schedules">Horaires</string>
+
+    <!-- Accueil -->
+    <string name="status_blocking">Blocage actif</string>
+    <string name="status_break">Pause</string>
+    <string name="status_idle">Aucun blocage en cours</string>
+    <plurals name="main_list_count">
+        <item quantity="one">%d appli dans la liste principale</item>
+        <item quantity="many">%d applis dans la liste principale</item>
+        <item quantity="other">%d applis dans la liste principale</item>
+    </plurals>
+    <string name="schedule_running_strict">Horaire strict en cours jusqu\'à %s</string>
+    <string name="schedule_running_flexible">Horaire souple en cours jusqu\'à %s</string>
+    <string name="strict_locked_notice">🔒 Mode strict : impossible de désactiver ou désinstaller LibreBlock</string>
+    <string name="session_work">Session de travail</string>
+    <string name="session_focus">Session de concentration</string>
+    <string name="session_remaining">Reste %1$s · fin à %2$s</string>
+    <string name="session_strict_suffix"> · mode strict</string>
+    <string name="stop_session">Arrêter la session</string>
+    <string name="new_session">Nouvelle session</string>
+    <string name="mode_continuous">Blocage continu</string>
+    <string name="mode_cycles">Travail + pauses</string>
+    <string name="total_duration">Durée totale : %s</string>
+    <string name="work">Travail</string>
+    <string name="break_label">Pause</string>
+    <string name="minutes_value">%d min</string>
+    <string name="strict_session_switch">Mode strict (impossible d\'arrêter avant la fin)</string>
+    <string name="start">Démarrer</string>
+    <string name="choose_apps_first">Choisis d\'abord des applis dans l\'onglet Applis.</string>
+    <string name="phase_break">☕ Pause — reprise dans %s</string>
+    <string name="phase_work">Travail — pause dans %s</string>
+    <string name="phase_last">Travail — dernière ligne droite</string>
+
+    <!-- Carte du service et information accessibilité -->
+    <string name="service_off_title">Le service de blocage est désactivé</string>
+    <string name="service_off_text">Active « LibreBlock » dans les réglages d\'accessibilité pour que le blocage fonctionne.</string>
+    <string name="enable_blocking">Activer le blocage</string>
+    <string name="restricted_hint">Option grisée ? (Android 13+) Va dans Infos de l\'appli → menu ⋮ → « Autoriser les paramètres restreints », puis réessaie.</string>
+    <string name="app_info">Infos de l\'appli</string>
+    <string name="disclosure_title">Utilisation de l\'accessibilité</string>
+    <string name="disclosure_intro">LibreBlock utilise l\'API d\'accessibilité d\'Android (AccessibilityService) pour bloquer les applis que tu as choisies.</string>
+    <string name="disclosure_does_title">Ce que LibreBlock fait avec cette autorisation :</string>
+    <string name="disclosure_does_1">• détecter quelle appli est ouverte, pour afficher l\'écran de blocage si elle est bloquée ;</string>
+    <string name="disclosure_does_2">• en mode strict uniquement, lire le texte des écrans Paramètres et de désinstallation pour refermer ceux qui permettraient de désactiver ou de désinstaller LibreBlock.</string>
+    <string name="disclosure_doesnt_title">Ce que LibreBlock ne fait pas :</string>
+    <string name="disclosure_doesnt">• aucune donnée n\'est collectée, enregistrée ni envoyée : l\'appli n\'a pas accès à Internet ;\n• le contenu des autres applis n\'est ni lu ni conservé.</string>
+    <string name="disclosure_disable">Tu peux désactiver ce service à tout moment dans les réglages d\'accessibilité (hors mode strict).</string>
+    <string name="accept">J\'accepte</string>
+    <string name="decline">Refuser</string>
+    <string name="privacy_title">Confidentialité</string>
+    <string name="privacy_text">LibreBlock n\'a pas accès à Internet et ne collecte aucune donnée. Tes réglages restent sur ce téléphone.</string>
+
+    <!-- Applis -->
+    <string name="apps_intro">Liste principale : bloquée pendant les sessions manuelles et les horaires qui l\'utilisent. Un horaire peut aussi avoir sa liste personnalisée.</string>
+    <string name="search_apps">Rechercher une appli</string>
+    <string name="picker_locked">🔒 Mode strict : tu peux ajouter des applis, pas en retirer.</string>
+    <string name="add_main_list">Ajouter la liste principale</string>
+    <string name="schedule_apps_title">Applis de l\'horaire</string>
+
+    <!-- Horaires -->
+    <string name="schedules_empty">Aucun horaire. Appuie sur + pour bloquer des applis à heures fixes.</string>
+    <string name="list_main_count">Liste principale (%d)</string>
+    <string name="list_custom_count">Liste perso (%d)</string>
+    <string name="strict_short">strict</string>
+    <string name="flexible_short">souple</string>
+    <string name="cycles_summary">travail %1$d min / pause %2$d min</string>
+    <string name="locked_running">En cours, verrouillé</string>
+    <string name="delete">Supprimer</string>
+    <string name="add_schedule">Ajouter un horaire</string>
+    <string name="schedule_dialog_title">Horaire</string>
+    <string name="schedule_locked_notice">🔒 Horaire strict en cours : tu peux seulement ajouter des applis.</string>
+    <string name="start_time">Début : %s</string>
+    <string name="end_time">Fin : %s</string>
+    <string name="all_day">Toute la journée</string>
+    <string name="ends_next_day">Se termine le lendemain</string>
+    <string name="blocked_apps">Applis bloquées</string>
+    <string name="main_list">Liste principale</string>
+    <string name="custom_list">Personnalisée</string>
+    <plurals name="main_list_hint">
+        <item quantity="one">%d appli, modifiable dans l\'onglet Applis</item>
+        <item quantity="many">%d applis, modifiables dans l\'onglet Applis</item>
+        <item quantity="other">%d applis, modifiables dans l\'onglet Applis</item>
+    </plurals>
+    <string name="choose_apps">Choisir les applis (%d)</string>
+    <string name="strict_schedule_switch">Strict (impossible de modifier ou contourner pendant l\'horaire)</string>
+    <string name="cycles_switch">Session de travail (avec pauses)</string>
+    <string name="save">Enregistrer</string>
+    <string name="cancel">Annuler</string>
+    <string name="ok">OK</string>
+    <string name="every_day">Tous les jours</string>
+    <string name="weekdays">En semaine</string>
+    <string name="weekend">Week-end</string>
+
+    <!-- Écran de blocage -->
+    <string name="blocked_title">%s est bloquée</string>
+    <string name="reason_ended">Le blocage vient de se terminer.</string>
+    <string name="reason_work_next_break">Session de travail — prochaine pause à %s</string>
+    <string name="reason_work_until">Session de travail jusqu\'à %s</string>
+    <string name="reason_focus_until">Session de concentration jusqu\'à %s</string>
+    <string name="reason_schedule_until">Horaire bloqué jusqu\'à %s</string>
+    <string name="back_home">Retour à l\'accueil</string>
+
+    <!-- Service -->
+    <string name="strict_toast">Mode strict actif</string>
+    <string name="channel_breaks">Pauses des sessions de travail</string>
+    <string name="notif_break">Pause ! Reprise à %s</string>
+    <string name="notif_work_next">Au travail ! Prochaine pause à %s</string>
+    <string name="notif_work_end">Au travail ! Fin de la session à %s</string>
+</resources>

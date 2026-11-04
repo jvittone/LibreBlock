@@ -3,11 +3,16 @@ package com.libreblock
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
  * Plage horaire récurrente. Bloque la liste principale (useMainList) ou sa liste personnalisée (apps).
@@ -204,24 +209,20 @@ class Store(context: Context) {
     }
 }
 
-val DAY_LETTERS = listOf("L", "M", "M", "J", "V", "S", "D")
-private val DAY_SHORT = listOf("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim")
-private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
+/** Noms des jours dans la langue du téléphone, du lundi au dimanche (même ordre que Schedule.days). */
+fun dayNames(style: TextStyle): List<String> =
+    DayOfWeek.entries.map { it.getDisplayName(style, Locale.getDefault()) }
 
-fun formatMinutes(m: Int) = "%02d:%02d".format(m / 60, m % 60)
+// Format court de la langue du téléphone : « 09:00 » en français, « 9:00 AM » en anglais américain.
+private fun clock() = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault())
 
-fun formatClock(epochMs: Long): String = CLOCK.format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()))
+fun formatMinutes(m: Int): String = clock().format(LocalTime.of(m / 60, m % 60))
+
+fun formatClock(epochMs: Long): String = clock().format(Instant.ofEpochMilli(epochMs).atZone(ZoneId.systemDefault()))
 
 fun formatDuration(minutes: Int) = if (minutes < 60) "$minutes min" else "%dh%02d".format(minutes / 60, minutes % 60)
 
 fun formatCountdown(ms: Long): String {
     val s = ms / 1000
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
-}
-
-fun formatDays(days: Int): String = when (days) {
-    0b1111111 -> "Tous les jours"
-    0b0011111 -> "En semaine"
-    0b1100000 -> "Week-end"
-    else -> DAY_SHORT.filterIndexed { i, _ -> (days and (1 shl i)) != 0 }.joinToString(" ")
 }

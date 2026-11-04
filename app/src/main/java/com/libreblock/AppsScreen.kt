@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -51,8 +52,7 @@ fun AppsScreen(store: Store, rev: Int, locked: Boolean, onChange: () -> Unit) {
     val blocked = remember(rev) { store.blockedApps }
     Column(Modifier.fillMaxSize()) {
         Text(
-            "Liste principale : bloquée pendant les sessions manuelles et les horaires qui l'utilisent. " +
-                "Un horaire peut aussi avoir sa liste personnalisée.",
+            stringResource(R.string.apps_intro),
             Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
             style = MaterialTheme.typography.bodySmall,
         )
@@ -80,13 +80,13 @@ fun AppPicker(selected: Set<String>, locked: Boolean, onChange: (Set<String>) ->
             value = query,
             onValueChange = { query = it },
             modifier = Modifier.fillMaxWidth().padding(16.dp),
-            placeholder = { Text("Rechercher une appli") },
+            placeholder = { Text(stringResource(R.string.search_apps)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
         )
         if (locked) {
             Text(
-                "🔒 Mode strict : tu peux ajouter des applis, pas en retirer.",
+                stringResource(R.string.picker_locked),
                 Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -129,19 +129,19 @@ fun AppPickerDialog(
         Surface(Modifier.fillMaxSize()) {
             Column {
                 Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onDismiss) { Text("Annuler") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
                     Text(
                         "$title (${selected.size})",
                         Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    TextButton(onClick = { onDone(selected) }) { Text("OK") }
+                    TextButton(onClick = { onDone(selected) }) { Text(stringResource(R.string.ok)) }
                 }
                 TextButton(
                     onClick = { selected = selected + mainList },
                     modifier = Modifier.padding(horizontal = 8.dp),
                     enabled = !selected.containsAll(mainList),
-                ) { Text("Ajouter la liste principale") }
+                ) { Text(stringResource(R.string.add_main_list)) }
                 AppPicker(selected, locked) { selected = it }
             }
         }

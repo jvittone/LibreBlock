@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -60,11 +61,11 @@ class BlockActivity : ComponentActivity() {
             .filter { it.blocking && pkg in it.apps }
             .maxByOrNull { it.phaseEnd }
         return when {
-            a == null -> "Le blocage vient de se terminer."
-            a.cycles && a.phaseEnd < a.end -> "Session de travail — prochaine pause à ${formatClock(a.phaseEnd)}"
-            a.cycles -> "Session de travail jusqu'à ${formatClock(a.end)}"
-            a.isSession -> "Session de concentration jusqu'à ${formatClock(a.end)}"
-            else -> "Horaire bloqué jusqu'à ${formatClock(a.end)}"
+            a == null -> getString(R.string.reason_ended)
+            a.cycles && a.phaseEnd < a.end -> getString(R.string.reason_work_next_break, formatClock(a.phaseEnd))
+            a.cycles -> getString(R.string.reason_work_until, formatClock(a.end))
+            a.isSession -> getString(R.string.reason_focus_until, formatClock(a.end))
+            else -> getString(R.string.reason_schedule_until, formatClock(a.end))
         }
     }
 
@@ -92,11 +93,15 @@ private fun BlockScreen(label: String, reason: String, onClose: () -> Unit) {
         ) {
             Icon(Icons.Default.Lock, contentDescription = null, Modifier.size(72.dp))
             Spacer(Modifier.height(24.dp))
-            Text("$label est bloquée", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(
+                stringResource(R.string.blocked_title, label),
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+            )
             Spacer(Modifier.height(8.dp))
             Text(reason, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
             Spacer(Modifier.height(32.dp))
-            Button(onClick = onClose) { Text("Retour à l'accueil") }
+            Button(onClick = onClose) { Text(stringResource(R.string.back_home)) }
         }
     }
 }

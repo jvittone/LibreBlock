@@ -12,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -77,10 +80,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(val label: String, val icon: ImageVector) {
-    Home("Accueil", Icons.Default.Home),
-    Apps("Applis", Icons.AutoMirrored.Filled.List),
-    Schedules("Horaires", Icons.Default.DateRange),
+private enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
+    Home(R.string.tab_home, Icons.Default.Home),
+    Apps(R.string.tab_apps, Icons.AutoMirrored.Filled.List),
+    Schedules(R.string.tab_schedules, Icons.Default.DateRange),
 }
 
 @Composable
@@ -106,7 +109,7 @@ private fun App(store: Store) {
                         selected = tab == t,
                         onClick = { tab = t },
                         icon = { Icon(t.icon, contentDescription = null) },
-                        label = { Text(t.label) },
+                        label = { Text(stringResource(t.label)) },
                     )
                 }
             }
@@ -135,7 +138,7 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("LibreBlock", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
 
         if (!serviceOn) ServiceCard(context)
 
@@ -149,22 +152,26 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
         ) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    when {
-                        blocking -> "Blocage actif"
-                        actives.isNotEmpty() -> "Pause"
-                        else -> "Aucun blocage en cours"
-                    },
+                    stringResource(
+                        when {
+                            blocking -> R.string.status_blocking
+                            actives.isNotEmpty() -> R.string.status_break
+                            else -> R.string.status_idle
+                        }
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text("$blockedCount appli(s) dans la liste principale")
+                Text(pluralStringResource(R.plurals.main_list_count, blockedCount, blockedCount))
                 if (schedule != null) {
                     Text(
-                        "Horaire ${if (schedule.strict) "strict" else "souple"} en cours jusqu'à " +
-                            "${formatClock(schedule.end)} · ${schedule.apps.size} appli(s)"
+                        stringResource(
+                            if (schedule.strict) R.string.schedule_running_strict else R.string.schedule_running_flexible,
+                            formatClock(schedule.end),
+                        )
                     )
                     if (schedule.cycles) PhaseText(schedule, now)
                 }
-                if (locked) Text("🔒 Mode strict : impossible de désactiver ou désinstaller LibreBlock")
+                if (locked) Text(stringResource(R.string.strict_locked_notice))
             }
         }
 
@@ -173,20 +180,20 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (session != null) {
                     Text(
-                        if (session.cycles) "Session de travail" else "Session de concentration",
+                        stringResource(if (session.cycles) R.string.session_work else R.string.session_focus),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     if (session.cycles) PhaseText(session, now, MaterialTheme.typography.headlineSmall)
                     Text(
-                        "Reste ${formatCountdown(session.end - now)} · fin à ${formatClock(session.end)}" +
-                            if (session.strict) " · mode strict" else "",
+                        stringResource(R.string.session_remaining, formatCountdown(session.end - now), formatClock(session.end)) +
+                            if (session.strict) stringResource(R.string.session_strict_suffix) else "",
                         style = if (session.cycles) MaterialTheme.typography.bodyMedium
                         else MaterialTheme.typography.headlineSmall,
                     )
                     OutlinedButton(
                         onClick = { store.sessionEnd = 0L; onChange() },
                         enabled = !session.strict,
-                    ) { Text("Arrêter la session") }
+                    ) { Text(stringResource(R.string.stop_session)) }
                 } else {
                     NewSession(store, blockedCount, onChange)
                 }
@@ -201,16 +208,24 @@ private fun HomeScreen(store: Store, now: Long, rev: Int, locked: Boolean, onCha
 private fun NewSession(store: Store, blockedCount: Int, onChange: () -> Unit) {
     var cycles by rememberSaveable { mutableStateOf(false) }
     var minutes by rememberSaveable { mutableFloatStateOf(30f) }
-    var work by rememberSaveable { mutableIntStateOf(30) }
+    var work by rememberSaveable { mutableIntStateOf(25) }
     var pause by rememberSaveable { mutableIntStateOf(5) }
     var strict by rememberSaveable { mutableStateOf(false) }
 
-    Text("Nouvelle session", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.new_session), style = MaterialTheme.typography.titleMedium)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = !cycles, onClick = { cycles = false }, label = { Text("Blocage continu") })
-        FilterChip(selected = cycles, onClick = { cycles = true }, label = { Text("Travail + pauses") })
+        FilterChip(
+            selected = !cycles,
+            onClick = { cycles = false },
+            label = { Text(stringResource(R.string.mode_continuous)) },
+        )
+        FilterChip(
+            selected = cycles,
+            onClick = { cycles = true },
+            label = { Text(stringResource(R.string.mode_cycles)) },
+        )
     }
-    Text("Durée totale : ${formatDuration(minutes.toInt())}")
+    Text(stringResource(R.string.total_duration, formatDuration(minutes.toInt())))
     Slider(
         value = minutes,
         onValueChange = { minutes = it },
@@ -218,18 +233,18 @@ private fun NewSession(store: Store, blockedCount: Int, onChange: () -> Unit) {
         steps = 94, // pas de 5 min
     )
     if (cycles) {
-        Stepper("Travail", work, 5..120, 5) { work = it }
-        Stepper("Pause", pause, 1..60, 1) { pause = it }
+        Stepper(stringResource(R.string.work), work, 5..120, 5) { work = it }
+        Stepper(stringResource(R.string.break_label), pause, 1..60, 1) { pause = it }
     }
-    LabeledSwitch("Mode strict (impossible d'arrêter avant la fin)", strict) { strict = it }
+    LabeledSwitch(stringResource(R.string.strict_session_switch), strict) { strict = it }
     Button(
         onClick = {
             store.startSession(minutes.toInt(), strict, if (cycles) work else 0, pause)
             onChange()
         },
         enabled = blockedCount > 0,
-    ) { Text("Démarrer") }
-    if (blockedCount == 0) Text("Choisis d'abord des applis dans l'onglet Applis.")
+    ) { Text(stringResource(R.string.start)) }
+    if (blockedCount == 0) Text(stringResource(R.string.choose_apps_first))
 }
 
 /** « Travail — pause dans 12:34 » ou « Pause — reprise dans 3:21 ». */
@@ -238,9 +253,9 @@ private fun PhaseText(a: Active, now: Long, style: TextStyle = MaterialTheme.typ
     val left = formatCountdown(a.phaseEnd - now)
     Text(
         when {
-            !a.blocking -> "☕ Pause — reprise dans $left"
-            a.phaseEnd < a.end -> "Travail — pause dans $left"
-            else -> "Travail — dernière ligne droite"
+            !a.blocking -> stringResource(R.string.phase_break, left)
+            a.phaseEnd < a.end -> stringResource(R.string.phase_work, left)
+            else -> stringResource(R.string.phase_last)
         },
         style = style,
     )
@@ -251,20 +266,17 @@ private fun ServiceCard(context: Context) {
     var disclosure by remember { mutableStateOf(false) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Le service de blocage est désactivé", style = MaterialTheme.typography.titleMedium)
-            Text("Active « LibreBlock » dans les réglages d'accessibilité pour que le blocage fonctionne.")
+            Text(stringResource(R.string.service_off_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.service_off_text))
             Button(onClick = { disclosure = true }) {
-                Text("Activer le blocage")
+                Text(stringResource(R.string.enable_blocking))
             }
-            Text(
-                "Option grisée ? (Android 13+) Va dans Infos de l'appli → menu ⋮ → « Autoriser les paramètres restreints », puis réessaie.",
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Text(stringResource(R.string.restricted_hint), style = MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick = {
                 context.startActivity(
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
                 )
-            }) { Text("Infos de l'appli") }
+            }) { Text(stringResource(R.string.app_info)) }
         }
     }
     if (disclosure) {
@@ -286,32 +298,23 @@ private fun ServiceCard(context: Context) {
 private fun AccessibilityDisclosure(onAccept: () -> Unit, onDecline: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDecline,
-        title = { Text("Utilisation de l'accessibilité") },
+        title = { Text(stringResource(R.string.disclosure_title)) },
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    "LibreBlock utilise l'API d'accessibilité d'Android (AccessibilityService) pour bloquer " +
-                        "les applis que tu as choisies."
-                )
-                Text("Ce que LibreBlock fait avec cette autorisation :", style = MaterialTheme.typography.titleSmall)
-                Text("• détecter quelle appli est ouverte, pour afficher l'écran de blocage si elle est bloquée ;")
-                Text(
-                    "• en mode strict uniquement, lire le texte des écrans Paramètres et de désinstallation " +
-                        "pour refermer ceux qui permettraient de désactiver ou de désinstaller LibreBlock."
-                )
-                Text("Ce que LibreBlock ne fait pas :", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    "• aucune donnée n'est collectée, enregistrée ni envoyée : l'appli n'a pas accès à Internet ;\n" +
-                        "• le contenu des autres applis n'est ni lu ni conservé."
-                )
-                Text("Tu peux désactiver ce service à tout moment dans les réglages d'accessibilité (hors mode strict).")
+                Text(stringResource(R.string.disclosure_intro))
+                Text(stringResource(R.string.disclosure_does_title), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.disclosure_does_1))
+                Text(stringResource(R.string.disclosure_does_2))
+                Text(stringResource(R.string.disclosure_doesnt_title), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.disclosure_doesnt))
+                Text(stringResource(R.string.disclosure_disable))
             }
         },
-        confirmButton = { TextButton(onClick = onAccept) { Text("J'accepte") } },
-        dismissButton = { TextButton(onClick = onDecline) { Text("Refuser") } },
+        confirmButton = { TextButton(onClick = onAccept) { Text(stringResource(R.string.accept)) } },
+        dismissButton = { TextButton(onClick = onDecline) { Text(stringResource(R.string.decline)) } },
     )
 }
 
@@ -319,11 +322,8 @@ private fun AccessibilityDisclosure(onAccept: () -> Unit, onDecline: () -> Unit)
 private fun PrivacyCard() {
     Card {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Confidentialité", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "LibreBlock n'a pas accès à Internet et ne collecte aucune donnée. Tes réglages restent sur ce téléphone.",
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Text(stringResource(R.string.privacy_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.privacy_text), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -346,7 +346,7 @@ fun Stepper(
         IconButton(onClick = { onChange((value - step).coerceIn(range)) }, enabled = enabled && value > range.first) {
             Text("−", style = MaterialTheme.typography.titleLarge)
         }
-        Text("$value min", Modifier.width(64.dp), textAlign = TextAlign.Center)
+        Text(stringResource(R.string.minutes_value, value), Modifier.width(64.dp), textAlign = TextAlign.Center)
         IconButton(onClick = { onChange((value + step).coerceIn(range)) }, enabled = enabled && value < range.last) {
             Text("+", style = MaterialTheme.typography.titleLarge)
         }

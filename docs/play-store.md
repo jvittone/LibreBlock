@@ -18,7 +18,7 @@ Textes prêts à copier dans la Play Console.
 > Bloque tes applis immédiatement, de 5 minutes à 8 heures.
 >
 > 🍅 SESSIONS DE TRAVAIL
-> Alterne travail et pauses (par exemple 30 min / 5 min). Pendant les pauses, tes applis sont débloquées et une
+> Alterne travail et pauses (25 min / 5 min par défaut, réglable). Pendant les pauses, tes applis sont débloquées et une
 > notification te prévient quand le travail reprend.
 >
 > 📅 HORAIRES
@@ -37,6 +37,44 @@ Textes prêts à copier dans la Play Console.
 > LibreBlock utilise l'API d'accessibilité d'Android (AccessibilityService) uniquement pour savoir quelle appli est
 > ouverte et afficher l'écran de blocage, et, en mode strict, pour empêcher la désactivation ou la désinstallation de
 > LibreBlock. Aucune donnée n'est collectée ni partagée.
+
+### Traduction anglaise
+Dans *Fiche principale → Gérer les traductions → Ajouter des traductions → English (United States)*,
+puis éventuellement English (United Kingdom) avec les mêmes textes.
+
+**App name**:
+> LibreBlock – App Blocker
+
+**Short description** (80 characters max):
+> Block distracting apps. Schedules, work breaks, strict mode. Free, no ads.
+
+**Full description**:
+> LibreBlock helps you take back control of your phone by blocking the apps that waste your time.
+> Free, no ads, no account and no Internet access.
+>
+> ⏱ FOCUS SESSIONS
+> Block your apps right away, from 5 minutes to 8 hours.
+>
+> 🍅 WORK SESSIONS
+> Alternate work and breaks (25 min / 5 min by default, adjustable). During breaks your apps are unblocked, and a
+> notification tells you when it's time to get back to work.
+>
+> 📅 SCHEDULES
+> Set up recurring blocks by day of the week, including overnight (e.g. 11:00 PM – 8:00 AM).
+> Each schedule uses the main list or its own list of apps, and can be flexible or strict.
+>
+> 🔒 STRICT MODE
+> During a strict session or schedule, you can't stop blocking, remove apps, disable LibreBlock or uninstall it.
+> Perfect for when willpower isn't enough.
+>
+> 🛡 YOUR PRIVACY
+> LibreBlock has no Internet access and collects no data. Your settings stay on your phone.
+> The source code is open (GPL-3.0).
+>
+> ℹ️ ACCESSIBILITY SERVICE
+> LibreBlock uses the Android accessibility API (AccessibilityService) only to know which app is open and show the
+> block screen, and, in strict mode, to prevent LibreBlock from being disabled or uninstalled. No data is collected
+> or shared.
 
 **Catégorie** : Productivité
 **Coordonnées** : libreblock.app@gmail.com

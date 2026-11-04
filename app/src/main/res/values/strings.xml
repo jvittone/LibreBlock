@@ -1,6 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">LibreBlock</string>
-    <string name="accessibility_summary">Bloque les applis que tu as choisies</string>
-    <string name="accessibility_description">LibreBlock utilise l\'accessibilité pour savoir quelle appli est ouverte et afficher l\'écran de blocage. En mode strict, il lit aussi le texte des écrans Paramètres pour empêcher de désactiver ou désinstaller LibreBlock. Aucune donnée n\'est collectée ni envoyée : l\'appli n\'a pas accès à Internet.</string>
+    <string name="app_name" translatable="false">LibreBlock</string>
+    <string name="accessibility_summary">Blocks the apps you choose</string>
+    <string name="accessibility_description">LibreBlock uses accessibility to know which app is open and show the block screen. In strict mode, it also reads the text of Settings screens to prevent LibreBlock from being disabled or uninstalled. No data is collected or sent: the app has no Internet access.</string>
+
+    <!-- Navigation -->
+    <string name="tab_home">Home</string>
+    <string name="tab_apps">Apps</string>
+    <string name="tab_schedules">Schedules</string>
+
+    <!-- Home -->
+    <string name="status_blocking">Blocking active</string>
+    <string name="status_break">Break</string>
+    <string name="status_idle">Nothing blocked right now</string>
+    <plurals name="main_list_count">
+        <item quantity="one">%d app in the main list</item>
+        <item quantity="other">%d apps in the main list</item>
+    </plurals>
+    <string name="schedule_running_strict">Strict schedule until %s</string>
+    <string name="schedule_running_flexible">Flexible schedule until %s</string>
+    <string name="strict_locked_notice">🔒 Strict mode: LibreBlock can\'t be disabled or uninstalled</string>
+    <string name="session_work">Work session</string>
+    <string name="session_focus">Focus session</string>
+    <string name="session_remaining">%1$s left · ends at %2$s</string>
+    <string name="session_strict_suffix"> · strict mode</string>
+    <string name="stop_session">Stop session</string>
+    <string name="new_session">New session</string>
+    <string name="mode_continuous">Continuous</string>
+    <string name="mode_cycles">Work + breaks</string>
+    <string name="total_duration">Total duration: %s</string>
+    <string name="work">Work</string>
+    <string name="break_label">Break</string>
+    <string name="minutes_value">%d min</string>
+    <string name="strict_session_switch">Strict mode (can\'t be stopped before the end)</string>
+    <string name="start">Start</string>
+    <string name="choose_apps_first">Pick some apps in the Apps tab first.</string>
+    <string name="phase_break">☕ Break — back to work in %s</string>
+    <string name="phase_work">Work — break in %s</string>
+    <string name="phase_last">Work — final stretch</string>
+
+    <!-- Accessibility service card and disclosure -->
+    <string name="service_off_title">The blocking service is off</string>
+    <string name="service_off_text">Turn on “LibreBlock” in the accessibility settings for blocking to work.</string>
+    <string name="enable_blocking">Enable blocking</string>
+    <string name="restricted_hint">Option greyed out? (Android 13+) Go to App info → ⋮ menu → “Allow restricted settings”, then try again.</string>
+    <string name="app_info">App info</string>
+    <string name="disclosure_title">Use of accessibility</string>
+    <string name="disclosure_intro">LibreBlock uses the Android accessibility API (AccessibilityService) to block the apps you have chosen.</string>
+    <string name="disclosure_does_title">What LibreBlock does with this permission:</string>
+    <string name="disclosure_does_1">• detect which app is open, to show the block screen if it is blocked;</string>
+    <string name="disclosure_does_2">• in strict mode only, read the text of Settings and uninstall screens to close those that would disable or uninstall LibreBlock.</string>
+    <string name="disclosure_doesnt_title">What LibreBlock does not do:</string>
+    <string name="disclosure_doesnt">• no data is collected, stored or sent: the app has no Internet access;\n• the content of other apps is neither read nor kept.</string>
+    <string name="disclosure_disable">You can turn this service off at any time in the accessibility settings (except in strict mode).</string>
+    <string name="accept">I agree</string>
+    <string name="decline">Decline</string>
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_text">LibreBlock has no Internet access and collects no data. Your settings stay on this phone.</string>
+
+    <!-- Apps -->
+    <string name="apps_intro">Main list: blocked during manual sessions and the schedules that use it. A schedule can also have its own custom list.</string>
+    <string name="search_apps">Search apps</string>
+    <string name="picker_locked">🔒 Strict mode: you can add apps, not remove them.</string>
+    <string name="add_main_list">Add the main list</string>
+    <string name="schedule_apps_title">Schedule apps</string>
+
+    <!-- Schedules -->
+    <string name="schedules_empty">No schedules. Tap + to block apps at set times.</string>
+    <string name="list_main_count">Main list (%d)</string>
+    <string name="list_custom_count">Custom list (%d)</string>
+    <string name="strict_short">strict</string>
+    <string name="flexible_short">flexible</string>
+    <string name="cycles_summary">work %1$d min / break %2$d min</string>
+    <string name="locked_running">Running, locked</string>
+    <string name="delete">Delete</string>
+    <string name="add_schedule">Add a schedule</string>
+    <string name="schedule_dialog_title">Schedule</string>
+    <string name="schedule_locked_notice">🔒 Strict schedule running: you can only add apps.</string>
+    <string name="start_time">Start: %s</string>
+    <string name="end_time">End: %s</string>
+    <string name="all_day">All day</string>
+    <string name="ends_next_day">Ends the next day</string>
+    <string name="blocked_apps">Blocked apps</string>
+    <string name="main_list">Main list</string>
+    <string name="custom_list">Custom</string>
+    <plurals name="main_list_hint">
+        <item quantity="one">%d app, editable in the Apps tab</item>
+        <item quantity="other">%d apps, editable in the Apps tab</item>
+    </plurals>
+    <string name="choose_apps">Choose apps (%d)</string>
+    <string name="strict_schedule_switch">Strict (can\'t be changed or bypassed while running)</string>
+    <string name="cycles_switch">Work session (with breaks)</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="every_day">Every day</string>
+    <string name="weekdays">Weekdays</string>
+    <string name="weekend">Weekend</string>
+
+    <!-- Block screen -->
+    <string name="blocked_title">%s is blocked</string>
+    <string name="reason_ended">Blocking has just ended.</string>
+    <string name="reason_work_next_break">Work session — next break at %s</string>
+    <string name="reason_work_until">Work session until %s</string>
+    <string name="reason_focus_until">Focus session until %s</string>
+    <string name="reason_schedule_until">Blocked by a schedule until %s</string>
+    <string name="back_home">Back to home screen</string>
+
+    <!-- Service -->
+    <string name="strict_toast">Strict mode is on</string>
+    <string name="channel_breaks">Work session breaks</string>
+    <string name="notif_break">Break! Back to work at %s</string>
+    <string name="notif_work_next">Back to work! Next break at %s</string>
+    <string name="notif_work_end">Back to work! Session ends at %s</string>
 </resources>

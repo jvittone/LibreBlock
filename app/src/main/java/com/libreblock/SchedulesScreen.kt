@@ -1,5 +1,6 @@
 package com.libreblock
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,7 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import java.time.format.TextStyle
 
 @Composable
 fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
@@ -64,12 +69,9 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Text("Horaires", style = MaterialTheme.typography.headlineMedium)
+                Text(stringResource(R.string.tab_schedules), style = MaterialTheme.typography.headlineMedium)
                 if (schedules.isEmpty()) {
-                    Text(
-                        "Aucun horaire. Appuie sur + pour bloquer des applis à heures fixes.",
-                        Modifier.padding(top = 8.dp),
-                    )
+                    Text(stringResource(R.string.schedules_empty), Modifier.padding(top = 8.dp))
                 }
             }
             items(schedules, key = { it.id }) { s ->
@@ -81,19 +83,20 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
                                 "${formatMinutes(s.startMin)} – ${formatMinutes(s.endMin)}" + if (s.strict) "  🔒" else "",
                                 style = MaterialTheme.typography.titleLarge,
                             )
-                            Text(formatDays(s.days))
+                            Text(daysLabel(s.days))
                             Text(
-                                buildString {
-                                    append(
-                                        if (s.useMainList) "Liste principale (${mainList.size})"
-                                        else "Liste perso (${s.apps.size})"
-                                    )
-                                    append(if (s.strict) " · strict" else " · souple")
-                                    if (s.workMin > 0) append(" · travail ${s.workMin} min / pause ${s.breakMin} min")
-                                },
+                                listOfNotNull(
+                                    if (s.useMainList) stringResource(R.string.list_main_count, mainList.size)
+                                    else stringResource(R.string.list_custom_count, s.apps.size),
+                                    stringResource(if (s.strict) R.string.strict_short else R.string.flexible_short),
+                                    if (s.workMin > 0) stringResource(R.string.cycles_summary, s.workMin, s.breakMin)
+                                    else null,
+                                ).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall,
                             )
-                            if (locked) Text("En cours, verrouillé", style = MaterialTheme.typography.bodySmall)
+                            if (locked) {
+                                Text(stringResource(R.string.locked_running), style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                         Switch(
                             checked = s.enabled,
@@ -103,7 +106,7 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
                         IconButton(
                             onClick = { store.schedules = schedules.filter { it.id != s.id }; onChange() },
                             enabled = !locked,
-                        ) { Icon(Icons.Default.Delete, contentDescription = "Supprimer") }
+                        ) { Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete)) }
                     }
                 }
             }
@@ -113,7 +116,7 @@ fun SchedulesScreen(store: Store, rev: Int, now: Long, onChange: () -> Unit) {
                 editing = Schedule(System.currentTimeMillis(), 0b0011111, 9 * 60, 17 * 60, useMainList = true)
             },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-        ) { Icon(Icons.Default.Add, contentDescription = "Ajouter un horaire") }
+        ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_schedule)) }
     }
 
     editing?.let { s ->
@@ -139,7 +142,7 @@ private fun ScheduleDialog(
     var start by remember { mutableIntStateOf(initial.startMin) }
     var end by remember { mutableIntStateOf(initial.endMin) }
     var cycles by remember { mutableStateOf(initial.workMin > 0) }
-    var work by remember { mutableIntStateOf(if (initial.workMin > 0) initial.workMin else 30) }
+    var work by remember { mutableIntStateOf(if (initial.workMin > 0) initial.workMin else 25) }
     var pause by remember { mutableIntStateOf(initial.breakMin) }
     var strict by remember { mutableStateOf(initial.strict) }
     var apps by remember { mutableStateOf(initial.apps) }
@@ -150,31 +153,31 @@ private fun ScheduleDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Horaire") },
+        title = { Text(stringResource(R.string.schedule_dialog_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (locked) Text("🔒 Horaire strict en cours : tu peux seulement ajouter des applis.")
+                if (locked) Text(stringResource(R.string.schedule_locked_notice))
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    DAY_LETTERS.forEachIndexed { i, letter ->
+                    dayNames(TextStyle.NARROW).forEachIndexed { i, letter ->
                         DayToggle(letter, (days and (1 shl i)) != 0, editable) { days = days xor (1 shl i) }
                     }
                 }
                 OutlinedButton(onClick = { pickingStart = true }, Modifier.fillMaxWidth(), enabled = editable) {
-                    Text("Début : ${formatMinutes(start)}")
+                    Text(stringResource(R.string.start_time, formatMinutes(start)))
                 }
                 OutlinedButton(onClick = { pickingStart = false }, Modifier.fillMaxWidth(), enabled = editable) {
-                    Text("Fin : ${formatMinutes(end)}")
+                    Text(stringResource(R.string.end_time, formatMinutes(end)))
                 }
                 when {
-                    end == start -> Text("Toute la journée", style = MaterialTheme.typography.bodySmall)
-                    end < start -> Text("Se termine le lendemain", style = MaterialTheme.typography.bodySmall)
+                    end == start -> Text(stringResource(R.string.all_day), style = MaterialTheme.typography.bodySmall)
+                    end < start -> Text(stringResource(R.string.ends_next_day), style = MaterialTheme.typography.bodySmall)
                 }
-                Text("Applis bloquées", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.blocked_apps), style = MaterialTheme.typography.titleSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
                         selected = useMainList,
                         onClick = { useMainList = true },
-                        label = { Text("Liste principale") },
+                        label = { Text(stringResource(R.string.main_list)) },
                         enabled = editable,
                     )
                     FilterChip(
@@ -183,27 +186,25 @@ private fun ScheduleDialog(
                             useMainList = false
                             if (apps.isEmpty()) apps = mainList
                         },
-                        label = { Text("Personnalisée") },
+                        label = { Text(stringResource(R.string.custom_list)) },
                         enabled = editable,
                     )
                 }
                 if (useMainList) {
                     Text(
-                        "${mainList.size} appli(s), modifiables dans l'onglet Applis",
+                        pluralStringResource(R.plurals.main_list_hint, mainList.size, mainList.size),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 } else {
                     OutlinedButton(onClick = { pickingApps = true }, Modifier.fillMaxWidth()) {
-                        Text("Choisir les applis (${apps.size})")
+                        Text(stringResource(R.string.choose_apps, apps.size))
                     }
                 }
-                LabeledSwitch("Strict (impossible de modifier ou contourner pendant l'horaire)", strict, editable) {
-                    strict = it
-                }
-                LabeledSwitch("Session de travail (avec pauses)", cycles, editable) { cycles = it }
+                LabeledSwitch(stringResource(R.string.strict_schedule_switch), strict, editable) { strict = it }
+                LabeledSwitch(stringResource(R.string.cycles_switch), cycles, editable) { cycles = it }
                 if (cycles) {
-                    Stepper("Travail", work, 5..120, 5, editable) { work = it }
-                    Stepper("Pause", pause, 1..60, 1, editable) { pause = it }
+                    Stepper(stringResource(R.string.work), work, 5..120, 5, editable) { work = it }
+                    Stepper(stringResource(R.string.break_label), pause, 1..60, 1, editable) { pause = it }
                 }
             }
         },
@@ -219,9 +220,9 @@ private fun ScheduleDialog(
                     )
                 },
                 enabled = days != 0,
-            ) { Text("Enregistrer") }
+            ) { Text(stringResource(R.string.save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 
     pickingStart?.let { isStart ->
@@ -232,7 +233,7 @@ private fun ScheduleDialog(
     }
     if (pickingApps) {
         AppPickerDialog(
-            "Applis de l'horaire",
+            stringResource(R.string.schedule_apps_title),
             initial = apps,
             locked = locked,
             mainList = mainList,
@@ -256,14 +257,26 @@ private fun DayToggle(letter: String, selected: Boolean, enabled: Boolean, onCli
     }
 }
 
+/** « En semaine », « Week-end », « Tous les jours » ou les jours abrégés dans la langue du téléphone. */
+@Composable
+private fun daysLabel(days: Int): String = when (days) {
+    0b1111111 -> stringResource(R.string.every_day)
+    0b0011111 -> stringResource(R.string.weekdays)
+    0b1100000 -> stringResource(R.string.weekend)
+    else -> dayNames(TextStyle.SHORT).filterIndexed { i, _ -> (days and (1 shl i)) != 0 }.joinToString(" ")
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TimePickDialog(initial: Int, onDismiss: () -> Unit, onPick: (Int) -> Unit) {
-    val state = rememberTimePickerState(initial / 60, initial % 60, is24Hour = true)
+    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val state = rememberTimePickerState(initial / 60, initial % 60, is24Hour = is24Hour)
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+        confirmButton = {
+            TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text(stringResource(R.string.ok)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
         text = { TimePicker(state) },
     )
 }

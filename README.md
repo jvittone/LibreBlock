@@ -10,7 +10,7 @@ Bloqueur d'applis Android gratuit, sans pub, sans compte, sans accès à Interne
 
 ## Fonctions
 - **Sessions de concentration** : blocage immédiat de 5 min à 8 h.
-- **Sessions de travail** : alternance travail / pause (ex. 30 / 5 min), avec une notification à chaque changement.
+- **Sessions de travail** : alternance travail / pause (25 / 5 min par défaut), avec une notification à chaque changement.
 - **Horaires** récurrents par jour de la semaine, y compris de nuit (ex. 23:00 – 08:00). Chaque horaire utilise la
   liste principale ou sa propre liste, et peut être souple ou strict.
 - **Mode strict** : impossible d'arrêter le blocage, de retirer des applis, de désactiver le service ou de
