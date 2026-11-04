@@ -46,3 +46,7 @@ Infos de l'appli → ⋮ → *Autoriser les paramètres restreints*.
 
 ## Confidentialité
 Aucune donnée collectée : voir [docs/privacy.md](docs/privacy.md).
+
+## Licence
+LibreBlock est un logiciel libre distribué sous licence [GNU GPL v3](LICENSE) : tu peux l'utiliser, l'étudier,
+le modifier et le redistribuer, à condition de publier tes modifications sous la même licence.
