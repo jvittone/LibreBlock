@@ -84,7 +84,7 @@
     <string name="schedules_empty">No schedules. Tap + to block apps at set times.</string>
     <string name="strict_short">strict</string>
     <string name="flexible_short">flexible</string>
-    <string name="cycles_summary">work %1$d min / break %2$d min</string>
+    <string name="cycles_summary">cycles %1$d / %2$d min</string>
     <string name="locked_running">Running, locked</string>
     <string name="delete">Delete</string>
     <string name="add_schedule">Add a schedule</string>

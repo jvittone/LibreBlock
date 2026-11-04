@@ -61,6 +61,9 @@ Kotlin, Jetpack Compose, DataStore, Lifecycle, AGP 9 ; aucune dépendance hors A
 gradlew.bat connectedDebugAndroidTest -Ppreview
 ```
 
+La copie séparée est construite dans le même fichier que l'appli normale (`app-debug.apk`) : relancer
+`gradlew.bat assembleDebug` sans `-Ppreview` avant d'installer l'appli sur son téléphone.
+
 ## Compiler
 ```bash
 gradlew.bat testDebugUnitTest assembleDebug

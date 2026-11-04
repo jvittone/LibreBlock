@@ -85,7 +85,7 @@
     <string name="schedules_empty">Aucun horaire. Appuie sur + pour bloquer des applis à heures fixes.</string>
     <string name="strict_short">strict</string>
     <string name="flexible_short">souple</string>
-    <string name="cycles_summary">travail %1$d min / pause %2$d min</string>
+    <string name="cycles_summary">cycles %1$d / %2$d min</string>
     <string name="locked_running">En cours, verrouillé</string>
     <string name="delete">Supprimer</string>
     <string name="add_schedule">Ajouter un horaire</string>
