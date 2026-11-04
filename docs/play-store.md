@@ -40,7 +40,7 @@ Textes prêts à copier dans la Play Console.
 
 **Catégorie** : Productivité
 **Coordonnées** : libreblock.app@gmail.com
-**Règles de confidentialité** : URL publique de `docs/privacy.md` (par ex. via GitHub Pages)
+**Règles de confidentialité** : https://jvittone.github.io/LibreBlock/privacy
 
 ## Visuels
 - Icône 512 × 512 : `docs/store/icon-512.png`
