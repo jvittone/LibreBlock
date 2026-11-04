@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LibreBlock</string>
+    <string name="accessibility_summary">Bloque les applis que tu as choisies</string>
+    <string name="accessibility_description">LibreBlock utilise l\'accessibilité pour savoir quelle appli est ouverte et afficher l\'écran de blocage. En mode strict, il lit aussi le texte des écrans Paramètres pour empêcher de désactiver ou désinstaller LibreBlock. Aucune donnée n\'est collectée ni envoyée : l\'appli n\'a pas accès à Internet.</string>
+</resources>

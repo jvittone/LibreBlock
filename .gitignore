@@ -1,0 +1,14 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+
+# Montre les applis installées sur le téléphone du développeur.
+docs/store/screenshot-4.png
+
+# Clé d'envoi Google Play : ne jamais la publier.
+keystore.properties
+*.jks
+*.keystore
