@@ -36,6 +36,7 @@ import androidx.core.content.ContextCompat
 class BlockerService : AccessibilityService() {
 
     private lateinit var repo: SettingsRepository
+    private val audio by lazy { getSystemService(AudioManager::class.java) }
     private val handler = Handler(Looper.getMainLooper())
     private var foreground: String? = null
     private var lastBlock = 0L
@@ -112,7 +113,9 @@ class BlockerService : AccessibilityService() {
         // Seules les applis du lanceur sont bloquables : jamais le clavier, l'interface système, les appels…
         if (pkg == packageName || pkg in essentials || pkg !in launchable) return
         val t = SystemClock.elapsedRealtime()
-        if (t - lastBlock < 1000) return
+        // Pendant une sonnerie ou un appel, même dans une appli bloquée (WhatsApp…), on laisse décrocher et parler.
+        // La vérification périodique bloquera l'appli une fois l'appel terminé.
+        if (t - lastBlock < 1000 || isCallAudioMode(audio.mode)) return
         val now = repo.now()
         if (!repo.evaluate(now).blocks(pkg)) return
         lastBlock = t
@@ -132,7 +135,7 @@ class BlockerService : AccessibilityService() {
      * et une perte définitive du focus ne les fait pas reprendre.
      */
     private fun pauseMedia() {
-        val audio = getSystemService(AudioManager::class.java)
+        if (isCallAudioMode(audio.mode)) return
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(
                 AudioAttributes.Builder()
