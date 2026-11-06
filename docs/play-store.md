@@ -26,6 +26,10 @@ Textes prêts à copier dans la Play Console.
 > Programme des blocages récurrents par jour de la semaine, y compris la nuit (ex. 23:00 – 08:00).
 > Chaque horaire utilise la liste principale ou sa propre liste d'applis, et peut être souple ou strict.
 >
+> ⏳ LIMITES QUOTIDIENNES
+> Fixe un temps maximal par jour pour une appli : 5 minutes et 1 minute avant la fin, une notification te prévient,
+> puis l'appli est bloquée jusqu'à minuit. Augmenter une limite ne compte qu'à partir du lendemain.
+>
 > 🏖 VACANCES
 > Indique tes périodes de vacances : les horaires marqués « Travail » sont suspendus, les autres continuent
 > (le blocage du soir, par exemple).
@@ -79,6 +83,10 @@ puis éventuellement English (United Kingdom) avec les mêmes textes.
 > 📅 SCHEDULES
 > Set up recurring blocks by day of the week, including overnight (e.g. 11:00 PM – 8:00 AM).
 > Each schedule uses the main list or its own list of apps, and can be flexible or strict.
+>
+> ⏳ DAILY LIMITS
+> Set a maximum time per day for an app: a notification warns you 5 minutes and 1 minute before the end, then the
+> app is blocked until midnight. Raising a limit only counts from the next day.
 >
 > 🏖 VACATIONS
 > Add your vacation periods: schedules marked "Work" are suspended, the others keep running (your evening block,
