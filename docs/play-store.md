@@ -15,7 +15,8 @@ Textes prêts à copier dans la Play Console.
 > Gratuit, sans publicité, sans compte et sans accès à Internet.
 >
 > ⏱ SESSIONS DE CONCENTRATION
-> Bloque tes applis immédiatement, de 5 minutes à 8 heures.
+> Bloque tes applis tout de suite, de 5 minutes à 8 heures. Une notification affiche le temps restant, et une tuile
+> des réglages rapides lance ou arrête une session en un geste.
 >
 > 🍅 SESSIONS DE TRAVAIL
 > Alterne travail et pauses (25 min / 5 min par défaut, réglable). Pendant les pauses, tes applis sont débloquées et une
@@ -25,13 +26,28 @@ Textes prêts à copier dans la Play Console.
 > Programme des blocages récurrents par jour de la semaine, y compris la nuit (ex. 23:00 – 08:00).
 > Chaque horaire utilise la liste principale ou sa propre liste d'applis, et peut être souple ou strict.
 >
+> 🏖 VACANCES
+> Indique tes périodes de vacances : les horaires marqués « Travail » sont suspendus, les autres continuent
+> (le blocage du soir, par exemple).
+>
+> 🚫 TOUT BLOQUER SAUF
+> Plutôt que de choisir les applis à bloquer, choisis celles qui restent autorisées : tout le reste est bloqué.
+>
 > 🔒 MODE STRICT
 > Pendant une session ou un horaire strict, impossible d'arrêter le blocage, de retirer des applis, de désactiver
-> LibreBlock ou de le désinstaller. Idéal quand la volonté ne suffit pas.
+> LibreBlock ou de le désinstaller. Changer l'heure du téléphone ne permet pas de le contourner.
+> Idéal quand la volonté ne suffit pas.
+>
+> 🛟 DES GARDE-FOUS
+> Impossible de bloquer complètement ton téléphone : l'écran d'accueil et l'appli Téléphone restent toujours
+> accessibles, les appels passent toujours, et les horaires stricts laissent au moins 2 heures libres par jour.
+>
+> 📊 STATISTIQUES
+> Temps de concentration, ouvertures bloquées, série de jours et applis les plus bloquées sur 7 jours.
 >
 > 🛡 RESPECT DE TA VIE PRIVÉE
-> LibreBlock n'a pas accès à Internet et ne collecte aucune donnée. Tes réglages restent sur ton téléphone.
-> Le code source est ouvert.
+> LibreBlock n'a pas accès à Internet et ne collecte aucune donnée. Tes réglages et tes statistiques restent sur ton
+> téléphone. C'est un logiciel libre (GPL-3.0) : le code source est ouvert.
 >
 > ℹ️ SERVICE D'ACCESSIBILITÉ
 > LibreBlock utilise l'API d'accessibilité d'Android (AccessibilityService) uniquement pour savoir quelle appli est
@@ -53,7 +69,8 @@ puis éventuellement English (United Kingdom) avec les mêmes textes.
 > Free, no ads, no account and no Internet access.
 >
 > ⏱ FOCUS SESSIONS
-> Block your apps right away, from 5 minutes to 8 hours.
+> Block your apps right away, from 5 minutes to 8 hours. A notification shows the time left, and a Quick Settings
+> tile starts or stops a session in one tap.
 >
 > 🍅 WORK SESSIONS
 > Alternate work and breaks (25 min / 5 min by default, adjustable). During breaks your apps are unblocked, and a
@@ -63,13 +80,27 @@ puis éventuellement English (United Kingdom) avec les mêmes textes.
 > Set up recurring blocks by day of the week, including overnight (e.g. 11:00 PM – 8:00 AM).
 > Each schedule uses the main list or its own list of apps, and can be flexible or strict.
 >
+> 🏖 VACATIONS
+> Add your vacation periods: schedules marked "Work" are suspended, the others keep running (your evening block,
+> for example).
+>
+> 🚫 BLOCK ALL EXCEPT
+> Instead of picking the apps to block, pick the ones you allow: everything else is blocked.
+>
 > 🔒 STRICT MODE
 > During a strict session or schedule, you can't stop blocking, remove apps, disable LibreBlock or uninstall it.
-> Perfect for when willpower isn't enough.
+> Changing the phone's clock won't get you around it. Perfect for when willpower isn't enough.
+>
+> 🛟 SAFEGUARDS
+> You can never lock yourself out of your phone: the home screen and the Phone app always stay available, calls
+> always get through, and strict schedules leave at least 2 free hours every day.
+>
+> 📊 STATS
+> Focus time, blocked openings, daily streak and most blocked apps over 7 days.
 >
 > 🛡 YOUR PRIVACY
-> LibreBlock has no Internet access and collects no data. Your settings stay on your phone.
-> The source code is open (GPL-3.0).
+> LibreBlock has no Internet access and collects no data. Your settings and stats stay on your phone.
+> It's free software (GPL-3.0): the source code is open.
 >
 > ℹ️ ACCESSIBILITY SERVICE
 > LibreBlock uses the Android accessibility API (AccessibilityService) only to know which app is open and show the
@@ -83,7 +114,9 @@ puis éventuellement English (United Kingdom) avec les mêmes textes.
 ## Visuels
 - Icône 512 × 512 : `docs/store/icon-512.png`
 - Bannière 1024 × 500 : `docs/store/feature-1024x500.png` (français), `docs/store/feature-1024x500-en.png` (anglais)
-- Captures d'écran téléphone : `docs/store/fr/*.png` pour la fiche française, `docs/store/en/*.png` pour la fiche anglaise
+- Captures d'écran téléphone : `docs/store/play/fr/*.png` pour la fiche française, `docs/store/play/en/*.png` pour
+  la fiche anglaise. Play refuse un grand côté de plus du double du petit : ces versions sont élargies par
+  `tools/play-screenshots.py` à partir de `docs/store/fr` et `docs/store/en` (1080 × 2424).
 - Visuels régénérables avec `tools/store-graphics.ps1`
 
 ## Déclaration « Utilisation de l'API AccessibilityService »
