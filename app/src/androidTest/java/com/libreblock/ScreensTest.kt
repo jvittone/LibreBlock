@@ -157,6 +157,32 @@ class ScreensTest {
     }
 
     @Test
+    fun limitsShowUsageReachedLimitAndPendingRaise() {
+        val today = LocalDate.of(2026, 11, 6)
+        val now = today.atTime(15, 0).atZone(TrustedClock.zone).toInstant().toEpochMilli()
+        val settings = Settings().withLimit(youtube, 30, today).withLimit(youtube, 60, today)
+            .recordUsage(mapOf(youtube to 30 * 60L), today)
+        compose.setContent { LibreBlockTheme { LimitsScreen(UiState(settings, now, emptyList(), today), apps) { _, _ -> } } }
+
+        compose.onNodeWithText(str(R.string.limit_per_day, "30 min")).assertExists()
+        compose.onNodeWithText(str(R.string.limit_reached)).assertExists()
+        compose.onNodeWithText(str(R.string.limit_next, "1h00")).assertExists()
+    }
+
+    @Test
+    fun raisingALimitWarnsItAppliesTomorrow() {
+        var saved: Int? = null
+        compose.setContent {
+            LibreBlockTheme { LimitDialog("YouTube", current = 30, exists = true, usedSeconds = 0, onDismiss = {}) { saved = it } }
+        }
+        compose.onNodeWithText(str(R.string.limit_raise_tomorrow)).assertDoesNotExist()
+        compose.onNodeWithText("+").performClick()
+        compose.onNodeWithText(str(R.string.limit_raise_tomorrow)).assertExists()
+        compose.onNodeWithText(str(R.string.save)).performClick()
+        assertEquals(35, saved)
+    }
+
+    @Test
     fun statsShowTodayStreakAndTopApps() {
         val today = LocalDate.of(2026, 11, 4)
         var settings = Settings().recordBlock(youtube, today).recordBlock(youtube, today)

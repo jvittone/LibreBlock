@@ -14,6 +14,9 @@ Bloqueur d'applis Android gratuit, sans pub, sans compte, sans accès à Interne
 - **Sessions de travail** : alternance travail / pause (25 / 5 min par défaut), avec une notification à chaque changement.
 - **Horaires** récurrents par jour de la semaine, y compris de nuit (ex. 23:00 – 08:00). Chaque horaire utilise la
   liste principale ou sa propre liste, et peut être souple ou strict.
+- **Limites quotidiennes** : temps maximal par jour dans une appli, puis blocage jusqu'à minuit, avec un
+  avertissement 5 min et 1 min avant. Baisser une limite s'applique tout de suite ; l'augmenter ou la supprimer,
+  seulement le lendemain.
 - **Mode « tout bloquer sauf »** : chaque liste bloque soit les applis cochées, soit toutes les autres.
 - **Mode strict** : impossible d'arrêter le blocage, de rendre une liste moins stricte, de désactiver le service ou
   de désinstaller l'appli tant que la session ou l'horaire strict est en cours.

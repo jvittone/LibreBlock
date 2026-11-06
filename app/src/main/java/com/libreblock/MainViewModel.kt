@@ -99,6 +99,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
+    /** minutes = null : supprime la limite. Une hausse ou une suppression n'agit que le lendemain. */
+    fun setLimit(pkg: String, minutes: Int?) = repo.setLimit(pkg, minutes)
+
     fun startSession(config: SessionConfig) = repo.startSession(config)
 
     /** Refusé pendant une session stricte. */

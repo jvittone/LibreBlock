@@ -8,6 +8,7 @@
     <string name="tab_apps">Applis</string>
     <string name="tab_schedules">Horaires</string>
     <string name="tab_stats">Stats</string>
+    <string name="tab_limits">Limites</string>
 
     <!-- Listes d'applis -->
     <plurals name="apps_count">
@@ -148,6 +149,28 @@
         <item quantity="one">%d fois</item>
         <item quantity="many">%d fois</item>
         <item quantity="other">%d fois</item>
+    </plurals>
+
+    <!-- Limites quotidiennes -->
+    <string name="limits_title">Limites quotidiennes</string>
+    <string name="limits_hint">Une appli qui atteint sa limite est bloquée jusqu\'à minuit. Baisser une limite s\'applique tout de suite ; l\'augmenter ou la supprimer, seulement à partir de demain.</string>
+    <string name="limits_empty">Aucune limite. Ajoutes-en une pour plafonner le temps passé chaque jour dans une appli.</string>
+    <string name="add_limit">Ajouter une limite</string>
+    <string name="choose_app">Choisir une appli</string>
+    <string name="limit_per_day">%s par jour</string>
+    <string name="limit_today">Aujourd\'hui : %s</string>
+    <string name="limit_reached">Limite atteinte, bloquée jusqu\'à minuit</string>
+    <string name="limit_next">À partir de demain : %s par jour</string>
+    <string name="limit_removed_tomorrow">Supprimée à partir de demain</string>
+    <string name="daily_limit">Limite par jour</string>
+    <string name="limit_raise_tomorrow">Une limite plus haute ne s\'applique qu\'à partir de demain.</string>
+    <string name="remove_limit">Supprimer la limite</string>
+    <string name="reason_limit">Limite de %s par jour atteinte. De nouveau disponible demain.</string>
+    <string name="channel_limits">Limites quotidiennes</string>
+    <plurals name="notif_limit_left">
+        <item quantity="one">Plus que %d minute aujourd\'hui</item>
+        <item quantity="many">Plus que %d minutes aujourd\'hui</item>
+        <item quantity="other">Plus que %d minutes aujourd\'hui</item>
     </plurals>
 
     <!-- Premier lancement -->

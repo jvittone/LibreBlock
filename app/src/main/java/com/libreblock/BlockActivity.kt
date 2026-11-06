@@ -57,10 +57,15 @@ class BlockActivity : ComponentActivity() {
     }
 
     private fun reason(pkg: String): String {
-        val a = SettingsRepository.get(this).evaluate()
+        val repo = SettingsRepository.get(this)
+        val a = repo.evaluate()
             .filter { it.blocking && it.list.blocks(pkg) }
             .maxByOrNull { it.phaseEnd }
+        val settings = repo.settings.value
+        val today = repo.today()
         return when {
+            a == null && settings.limitReached(pkg, today) ->
+                getString(R.string.reason_limit, formatDuration(settings.limitOn(pkg, today) ?: 0))
             a == null -> getString(R.string.reason_ended)
             a.cycles && a.phaseEnd < a.end -> getString(R.string.reason_work_next_break, formatClock(a.phaseEnd))
             a.cycles -> getString(R.string.reason_work_until, formatClock(a.end))

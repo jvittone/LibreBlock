@@ -18,10 +18,12 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
 import android.service.quicksettings.TileService
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityWindowInfo
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -46,6 +48,11 @@ class BlockerService : AccessibilityService() {
     private var lastStatus: String? = null
     private var essentials = emptySet<String>()
     private var launchable = emptySet<String>()
+    private val power by lazy { getSystemService(PowerManager::class.java) }
+    private var usageApps = emptySet<String>()
+    private var usageMark = 0L
+    private val pendingUsage = mutableMapOf<String, Long>() // ms pas encore enregistrées
+    private val limitWarnings = mutableSetOf<String>()
 
     // Un horaire ou une phase de travail peut commencer pendant qu'on est déjà dans une
     // appli bloquée : aucun événement n'arrive alors, d'où cette vérification périodique.
@@ -54,11 +61,15 @@ class BlockerService : AccessibilityService() {
             essentials = essentialPackages(this@BlockerService)
             launchable = launchableApps(this@BlockerService).map { it.packageName }.toSet()
             val now = repo.now()
+            val current = currentApps()
+            trackUsage(current)
+            flushUsage(now)
             val actives = repo.evaluate(now)
             recordFocus(actives, now)
             notifyPhaseChange(actives)
             updateStatus(actives, now)
-            foreground?.let { check(it) }
+            warnLimits(now)
+            current.forEach { check(it) }
             handler.postDelayed(this, CHECK_INTERVAL_MS)
         }
     }
@@ -77,6 +88,7 @@ class BlockerService : AccessibilityService() {
             listOf(
                 NotificationChannel(CHANNEL_PHASES, getString(R.string.channel_breaks), NotificationManager.IMPORTANCE_HIGH),
                 NotificationChannel(CHANNEL_STATUS, getString(R.string.channel_status), NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(CHANNEL_LIMITS, getString(R.string.channel_limits), NotificationManager.IMPORTANCE_HIGH),
             )
         )
         val filter = IntentFilter().apply {
@@ -102,6 +114,7 @@ class BlockerService : AccessibilityService() {
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 if (pkg != SYSTEM_UI && pkg != currentKeyboard()) foreground = pkg
+                trackUsage(currentApps())
                 check(pkg)
                 guard(pkg)
             }
@@ -117,14 +130,23 @@ class BlockerService : AccessibilityService() {
         // La vérification périodique bloquera l'appli une fois l'appel terminé.
         if (t - lastBlock < 1000 || isCallAudioMode(audio.mode)) return
         val now = repo.now()
-        if (!repo.evaluate(now).blocks(pkg)) return
+        if (!repo.evaluate(now).blocks(pkg) && !repo.settings.value.limitReached(pkg, repo.today(now))) return
         lastBlock = t
         repo.update { it.recordBlock(pkg, repo.today(now)) }
         pauseMedia()
         performGlobalAction(GLOBAL_ACTION_HOME)
+        // Le retour à l'accueil est traité de façon asynchrone : lancé tout de suite, l'écran de blocage peut se
+        // retrouver sous l'accueil. On l'affiche donc un peu après, en remplaçant un affichage déjà prévu.
+        handler.removeCallbacks(showBlockScreen)
+        blockedPkg = pkg
+        handler.postDelayed(showBlockScreen, BLOCK_SCREEN_DELAY_MS)
+    }
+
+    private var blockedPkg = ""
+    private val showBlockScreen = Runnable {
         startActivity(
             Intent(this, BlockActivity::class.java)
-                .putExtra(BlockActivity.EXTRA_PACKAGE, pkg)
+                .putExtra(BlockActivity.EXTRA_PACKAGE, blockedPkg)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         )
     }
@@ -160,6 +182,60 @@ class BlockerService : AccessibilityService() {
         performGlobalAction(GLOBAL_ACTION_BACK)
         performGlobalAction(GLOBAL_ACTION_HOME)
         Toast.makeText(this, R.string.strict_toast, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Applis à l'écran, d'après les fenêtres affichées ou, à défaut, le dernier événement. */
+    private fun currentApps(): Set<String> = visibleApps().ifEmpty { setOfNotNull(foreground) }
+
+    /**
+     * Attribue le temps écoulé depuis le dernier appel aux applis qui étaient à l'écran, puis note celles
+     * qui le sont maintenant. Seules les applis bloquables comptent, et seulement écran allumé.
+     */
+    private fun trackUsage(current: Set<String>) {
+        val t = SystemClock.elapsedRealtime()
+        if (usageMark != 0L) {
+            val ms = (t - usageMark).coerceAtMost(MAX_USAGE_STEP_MS)
+            for (p in usageApps) pendingUsage[p] = (pendingUsage[p] ?: 0) + ms
+        }
+        usageMark = t
+        usageApps = if (power.isInteractive) {
+            current.filter { it != packageName && it !in essentials && it in launchable }.toSet()
+        } else emptySet()
+    }
+
+    /** Enregistre les secondes entières accumulées ; le reste attend la prochaine fois. */
+    private fun flushUsage(now: Long) {
+        val seconds = pendingUsage.mapValues { it.value / 1000 }.filterValues { it > 0 }
+        if (seconds.isEmpty()) return
+        seconds.forEach { (p, s) -> pendingUsage[p] = pendingUsage.getValue(p) - s * 1000 }
+        repo.update { it.recordUsage(seconds, repo.today(now)) }
+    }
+
+    /** Prévient 5 min puis 1 min avant qu'une appli à l'écran atteigne sa limite du jour. */
+    private fun warnLimits(now: Long) {
+        val today = repo.today(now)
+        val settings = repo.settings.value
+        for (p in usageApps) {
+            val left = settings.remainingSeconds(p, today) ?: continue
+            val step = when {
+                left <= 60 -> 1
+                left <= 300 -> 5
+                else -> continue
+            }
+            if (!limitWarnings.add("$today|$p|$step")) continue
+            limitWarnings += "$today|$p|5"
+            notify(
+                NOTIFICATION_LIMIT,
+                notification(CHANNEL_LIMITS, appLabel(p), resources.getQuantityString(R.plurals.notif_limit_left, step, step))
+                    .setAutoCancel(true),
+            )
+        }
+    }
+
+    private fun appLabel(pkg: String) = try {
+        packageManager.getApplicationInfo(pkg, 0).loadLabel(packageManager).toString()
+    } catch (e: PackageManager.NameNotFoundException) {
+        pkg
     }
 
     /** Ajoute aux statistiques le temps passé depuis la dernière vérification, s'il y avait un blocage. */
@@ -250,16 +326,33 @@ class BlockerService : AccessibilityService() {
     private fun refreshTile() =
         TileService.requestListeningState(this, ComponentName(this, SessionTileService::class.java))
 
+    /**
+     * Applis réellement à l'écran (plusieurs en écran partagé), y compris derrière le volet des notifications.
+     * Plus fiable que le dernier événement reçu, qui peut venir d'une autre fenêtre.
+     */
+    private fun visibleApps(): Set<String> = try {
+        windows.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
+            .mapNotNull { it.root?.packageName?.toString() }
+            .toSet()
+    } catch (e: RuntimeException) {
+        emptySet()
+    }
+
     private fun currentKeyboard(): String? =
         Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
             ?.substringBefore('/')
 
     companion object {
         private const val CHECK_INTERVAL_MS = 10_000L
+        private const val BLOCK_SCREEN_DELAY_MS = 400L
+        /** Au-delà, le téléphone dormait sans doute : on ne compte pas ce temps. */
+        private const val MAX_USAGE_STEP_MS = 30_000L
         private const val CHANNEL_PHASES = "phases"
         private const val CHANNEL_STATUS = "status"
+        private const val CHANNEL_LIMITS = "limits"
         private const val NOTIFICATION_PHASE = 1
         private const val NOTIFICATION_STATUS = 2
+        private const val NOTIFICATION_LIMIT = 3
         private const val SYSTEM_UI = "com.android.systemui"
         private val PROTECTED_PACKAGES = setOf(
             "com.android.settings",

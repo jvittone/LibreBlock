@@ -9,6 +9,7 @@
     <string name="tab_apps">Apps</string>
     <string name="tab_schedules">Schedules</string>
     <string name="tab_stats">Stats</string>
+    <string name="tab_limits">Limits</string>
 
     <!-- App lists -->
     <plurals name="apps_count">
@@ -145,6 +146,27 @@
     <plurals name="times_count">
         <item quantity="one">%d time</item>
         <item quantity="other">%d times</item>
+    </plurals>
+
+    <!-- Daily limits -->
+    <string name="limits_title">Daily limits</string>
+    <string name="limits_hint">An app that reaches its limit is blocked until midnight. Lowering a limit applies right away; raising or removing it only from tomorrow.</string>
+    <string name="limits_empty">No limits. Add one to cap the time you spend in an app each day.</string>
+    <string name="add_limit">Add a limit</string>
+    <string name="choose_app">Choose an app</string>
+    <string name="limit_per_day">%s per day</string>
+    <string name="limit_today">Today: %s</string>
+    <string name="limit_reached">Limit reached, blocked until midnight</string>
+    <string name="limit_next">From tomorrow: %s per day</string>
+    <string name="limit_removed_tomorrow">Removed from tomorrow</string>
+    <string name="daily_limit">Limit per day</string>
+    <string name="limit_raise_tomorrow">A higher limit only applies from tomorrow.</string>
+    <string name="remove_limit">Remove the limit</string>
+    <string name="reason_limit">Daily limit of %s reached. Available again tomorrow.</string>
+    <string name="channel_limits">Daily limits</string>
+    <plurals name="notif_limit_left">
+        <item quantity="one">%d minute left today</item>
+        <item quantity="other">%d minutes left today</item>
     </plurals>
 
     <!-- First launch -->

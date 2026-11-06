@@ -13,6 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -93,10 +95,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
+private enum class Tab(@StringRes val label: Int, val icon: ImageVector? = null, @DrawableRes val iconRes: Int = 0) {
     Home(R.string.tab_home, Icons.Default.Home),
     Apps(R.string.tab_apps, Icons.AutoMirrored.Filled.List),
     Schedules(R.string.tab_schedules, Icons.Default.DateRange),
+    Limits(R.string.tab_limits, iconRes = R.drawable.ic_timer),
     Stats(R.string.tab_stats, Icons.Default.Star),
 }
 
@@ -112,7 +115,10 @@ private fun App(state: UiState, apps: List<AppEntry>?, viewModel: MainViewModel)
                     NavigationBarItem(
                         selected = tab == t,
                         onClick = { tab = t },
-                        icon = { Icon(t.icon, contentDescription = null) },
+                        icon = {
+                            if (t.icon != null) Icon(t.icon, contentDescription = null)
+                            else Icon(painterResource(t.iconRes), contentDescription = null)
+                        },
                         label = { Text(stringResource(t.label)) },
                     )
                 }
@@ -133,6 +139,7 @@ private fun App(state: UiState, apps: List<AppEntry>?, viewModel: MainViewModel)
                     viewModel::saveSchedule, viewModel::deleteSchedule,
                     viewModel::saveVacation, viewModel::deleteVacation,
                 )
+                Tab.Limits -> LimitsScreen(state, apps, viewModel::setLimit)
                 Tab.Stats -> StatsScreen(
                     state.settings.stats,
                     Instant.ofEpochMilli(state.now).atZone(TrustedClock.zone).toLocalDate(),

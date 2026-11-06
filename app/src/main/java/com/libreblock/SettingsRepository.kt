@@ -70,12 +70,18 @@ class SettingsRepository private constructor(private val context: Context) {
         }
     }
 
-    /** Blocages en cours ; arme la protection de l'heure tant qu'un blocage strict est actif. */
+    /**
+     * Blocages en cours ; arme la protection de l'heure tant qu'un blocage strict est actif, qu'une limite
+     * quotidienne est atteinte ou qu'une hausse de limite attend le lendemain.
+     */
     fun evaluate(now: Long = now()): List<Active> {
-        val actives = state.value.active(now, TrustedClock.zone(context))
-        TrustedClock.setArmed(context, actives.locked())
+        val settings = state.value
+        val actives = settings.active(now, TrustedClock.zone(context))
+        TrustedClock.setArmed(context, actives.locked() || settings.limitsArmed(today(now)))
         return actives
     }
+
+    fun setLimit(pkg: String, minutes: Int?) = update { it.withLimit(pkg, minutes, today()) }
 
     companion object {
         @Volatile

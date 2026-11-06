@@ -101,7 +101,27 @@ data class Session(val start: Long, val end: Long, val strict: Boolean, val work
 /** Réglages de la dernière session, repris par l'écran d'accueil et la tuile. */
 data class SessionConfig(val minutes: Int = 25, val strict: Boolean = false, val workMin: Int = 0, val breakMin: Int = 5)
 
-data class DayStats(val blocked: Int = 0, val focusSeconds: Long = 0, val perApp: Map<String, Int> = emptyMap())
+/** perApp : ouvertures bloquées par appli. usage : secondes passées dans chaque appli, écran allumé. */
+data class DayStats(
+    val blocked: Int = 0,
+    val focusSeconds: Long = 0,
+    val perApp: Map<String, Int> = emptyMap(),
+    val usage: Map<String, Long> = emptyMap(),
+)
+
+/**
+ * Limite d'utilisation quotidienne d'une appli, en minutes. Pour qu'on ne puisse pas la contourner une fois
+ * atteinte, une hausse ou une suppression n'entre en vigueur que le lendemain : `next` (0 = suppression)
+ * remplace `minutes` à partir de `nextFrom`.
+ */
+data class AppLimit(val minutes: Int, val next: Int? = null, val nextFrom: LocalDate? = null) {
+    /** Limite en vigueur ce jour-là, null si elle est supprimée. */
+    fun on(day: LocalDate): Int? =
+        if (next != null && nextFrom != null && !day.isBefore(nextFrom)) next.takeIf { it > 0 } else minutes
+
+    /** Changement prévu, pas encore en vigueur ce jour-là. */
+    fun pendingOn(day: LocalDate) = next != null && nextFrom != null && day.isBefore(nextFrom)
+}
 
 /** Tout l'état persistant de l'appli. */
 data class Settings(
@@ -113,6 +133,8 @@ data class Settings(
     val onboardingDone: Boolean = false,
     /** Statistiques par jour, clé = date ISO (2026-11-04). */
     val stats: Map<String, DayStats> = emptyMap(),
+    /** Limites quotidiennes, par appli. */
+    val limits: Map<String, AppLimit> = emptyMap(),
 )
 
 // ---------------------------------------------------------------------------------------------
@@ -259,6 +281,50 @@ fun List<Schedule>.withSchedule(s: Schedule) =
     if (any { it.id == s.id }) map { if (it.id == s.id) s else it } else this + s
 
 // ---------------------------------------------------------------------------------------------
+// Limites quotidiennes
+
+fun Settings.limitOn(pkg: String, day: LocalDate): Int? = limits[pkg]?.on(day)
+
+/**
+ * Ajoute, change ou supprime (minutes = null) la limite de pkg. Ajouter ou baisser une limite s'applique tout
+ * de suite ; l'augmenter ou la supprimer, seulement le lendemain. Les changements passés en vigueur sont appliqués.
+ */
+fun Settings.withLimit(pkg: String, minutes: Int?, today: LocalDate): Settings {
+    val current = limitOn(pkg, today)
+    val updated = when {
+        minutes != null && (current == null || minutes <= current) -> AppLimit(minutes)
+        current == null -> null
+        else -> AppLimit(current, minutes ?: 0, today.plusDays(1))
+    }
+    val settled = limits.mapNotNull { (p, l) ->
+        when {
+            l.pendingOn(today) -> p to l
+            else -> l.on(today)?.let { p to AppLimit(it) }
+        }
+    }.toMap()
+    return copy(limits = if (updated == null) settled - pkg else settled + (pkg to updated))
+}
+
+fun Map<String, DayStats>.usage(pkg: String, day: LocalDate): Long = day(day).usage[pkg] ?: 0
+
+/** Secondes restantes aujourd'hui pour pkg, ou null s'il n'a pas de limite. */
+fun Settings.remainingSeconds(pkg: String, day: LocalDate): Long? =
+    limitOn(pkg, day)?.let { maxOf(0, it * 60L - stats.usage(pkg, day)) }
+
+fun Settings.limitReached(pkg: String, day: LocalDate) = remainingSeconds(pkg, day) == 0L
+
+/**
+ * Une limite est atteinte ou une hausse attend le lendemain : changer l'heure du téléphone permettrait de
+ * passer au lendemain plus tôt, la protection de l'heure doit être active.
+ */
+fun Settings.limitsArmed(day: LocalDate) =
+    limits.any { (pkg, l) -> l.pendingOn(day) || limitReached(pkg, day) }
+
+fun Settings.recordUsage(seconds: Map<String, Long>, day: LocalDate): Settings = updateDay(day) { d ->
+    d.copy(usage = d.usage + seconds.mapValues { (pkg, s) -> (d.usage[pkg] ?: 0) + s })
+}
+
+// ---------------------------------------------------------------------------------------------
 // Statistiques
 
 private const val STATS_DAYS = 60L
@@ -333,7 +399,18 @@ fun Settings.toJson(): String = JSONObject()
     .put("onboardingDone", onboardingDone)
     .put("stats", JSONObject().apply {
         stats.forEach { (day, s) ->
-            put(day, JSONObject().put("blocked", s.blocked).put("focus", s.focusSeconds).put("apps", JSONObject(s.perApp)))
+            put(
+                day,
+                JSONObject().put("blocked", s.blocked).put("focus", s.focusSeconds)
+                    .put("apps", JSONObject(s.perApp)).put("usage", JSONObject(s.usage)),
+            )
+        }
+    })
+    .put("limits", JSONObject().apply {
+        limits.forEach { (pkg, l) ->
+            put(pkg, JSONObject().put("minutes", l.minutes).apply {
+                if (l.next != null && l.nextFrom != null) put("next", l.next).put("nextFrom", l.nextFrom.toString())
+            })
         }
     })
     .toString()
@@ -370,7 +447,19 @@ fun settingsFromJson(text: String): Settings {
         stats = stats.keys().asSequence().associateWith { day ->
             val d = stats.getJSONObject(day)
             val apps = d.optJSONObject("apps") ?: JSONObject()
-            DayStats(d.optInt("blocked"), d.optLong("focus"), apps.keys().asSequence().associateWith { apps.getInt(it) })
+            val usage = d.optJSONObject("usage") ?: JSONObject()
+            DayStats(
+                d.optInt("blocked"), d.optLong("focus"),
+                apps.keys().asSequence().associateWith { apps.getInt(it) },
+                usage.keys().asSequence().associateWith { usage.getLong(it) },
+            )
+        },
+        limits = (o.optJSONObject("limits") ?: JSONObject()).let { limits ->
+            limits.keys().asSequence().associateWith { pkg ->
+                val l = limits.getJSONObject(pkg)
+                val from = l.optString("nextFrom").takeIf { it.isNotEmpty() }?.let(LocalDate::parse)
+                AppLimit(l.getInt("minutes"), if (from != null) l.optInt("next") else null, from)
+            }
         },
     )
 }
